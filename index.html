@@ -8,8 +8,7 @@
 </head>
 <body>
   <header>
-    <h1>Base Neural Network (Pre-Activation)</h1>
-    <p>This diagram shows a simple fully connected layer: three inputs mapping to three outputs before any activation function is applied.</p>
+    <h1>Base Neural Network</h1>
   </header>
   <main>
     <div class="global-controls">
@@ -21,19 +20,84 @@
         <label for="hiddenSize">Hidden Size: <span id="sizeValue">3</span></label>
         <input type="range" id="hiddenSize" min="1" max="5" value="3" />
       </div>
+      <div class="animation-controls">
+        <button id="animateBtn" type="button">Animate Step</button>
+        <button id="resetAnimBtn" type="button">Reset</button>
+      </div>
+    </div>
+    <div class="panels-row">
+      <div class="left-stack">
+        <section class="panel">
+          <div class="matrix-label">W<span class="sub">h</span> <span id="shapeWh" class="shape"></span></div>
+          <div id="network-container" class="network-box" aria-label="Hidden state network"></div>
+        </section>
+        <section class="panel">
+          <div class="matrix-label">W<span class="sub">x</span> <span id="shapeWx" class="shape"></span></div>
+          <div id="network-container-2" class="network-box" aria-label="Input to hidden mapping network"></div>
+        </section>
+      </div>
+      <section class="panel target-panel">
+        <div class="matrix-label"><span id="shapeOut" class="shape"></span></div>
+        <div id="target-container" class="network-box" aria-label="Target combined output panel"></div>
+      </section>
+    </div>
+  </main>
+  <hr class="section-divider" />
+  <section class="content-section">
+    <h2>RNN</h2>
+    <div class="global-controls">
+      <div class="size-control">
+        <label for="rnnHiddenSize">Hidden Size: <span id="rnnHiddenValue">3</span></label>
+        <input type="range" id="rnnHiddenSize" min="1" max="5" value="3" />
+      </div>
+      <div class="animation-controls">
+        <button id="rnnAnimateBtn" type="button">Animate</button>
+        <button id="rnnResetBtn" type="button">Reset</button>
+      </div>
     </div>
     <section class="panel">
-      <h2>Hidden State Layer</h2>
-      <div id="network-container" class="network-box" aria-label="Hidden state network"></div>
+      <div id="rnn-vector-container" class="network-box" aria-label="RNN hidden vector panel"></div>
     </section>
+  </section>
+  <hr class="section-divider" />
+  <section class="content-section">
+    <h2>Forget Gate</h2>
+    <div class="global-controls">
+      <div class="size-control">
+        <label for="forgetHiddenSize">Hidden Size: <span id="forgetHiddenValue">3</span></label>
+        <input type="range" id="forgetHiddenSize" min="1" max="5" value="3" />
+      </div>
+      <div class="animation-controls">
+        <button id="forgetAnimateBtn" type="button">Animate</button>
+        <button id="forgetResetBtn" type="button">Reset</button>
+      </div>
+    </div>
     <section class="panel">
-      <h2>Input → Hidden Mapping</h2>
-      <div id="network-container-2" class="network-box" aria-label="Input to hidden mapping network"></div>
+      <div id="forget-vector-container" class="network-box" aria-label="Forget gate vector panel"></div>
     </section>
-  </main>
-  <footer>
-    <small>Visualization: two fully connected layers. Hidden size controls hidden/output width; input size controls input width of second panel.</small>
-  </footer>
+  </section>
+  <hr class="section-divider" />
+  <section class="content-section">
+    <h2>Input Gate</h2>
+    <div class="global-controls">
+      <div class="size-control">
+        <label for="inputGateHiddenSize">Hidden Size: <span id="inputGateHiddenValue">3</span></label>
+        <input type="range" id="inputGateHiddenSize" min="1" max="5" value="3" />
+      </div>
+      <div class="animation-controls">
+        <button id="inputGateAnimateBtn" type="button">Animate</button>
+        <button id="inputGateResetBtn" type="button">Reset</button>
+      </div>
+    </div>
+    <div class="panels-row">
+      <section class="panel">
+        <div id="input-gate-panel-1" class="network-box" aria-label="Input gate base panel"></div>
+      </section>
+      <section class="panel">
+        <div id="input-gate-panel-2" class="network-box" aria-label="Input gate secondary panel"></div>
+      </section>
+    </div>
+  </section>
   <script src="script.js"></script>
 </body>
 </html>
