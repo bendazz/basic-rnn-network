@@ -1,17 +1,19 @@
 (function(){
-  const container = document.getElementById('network-container');
-  const sizeSlider = document.getElementById('hiddenSize');
-  const sizeValue = document.getElementById('sizeValue');
+  const hiddenSlider = document.getElementById('hiddenSize');
+  const hiddenValue = document.getElementById('sizeValue');
+  const inputSlider = document.getElementById('inputSize');
+  const inputValue = document.getElementById('inputSizeValue');
+  const containerHidden = document.getElementById('network-container');
+  const containerInputHidden = document.getElementById('network-container-2');
 
   const svgNS = 'http://www.w3.org/2000/svg';
   const padding = 70;
-  const width = container.clientWidth || 800;
-  const height = container.clientHeight || 450;
+  const dims = { w: 800, h: 450 };
 
-  function buildNetwork(size){
-    container.innerHTML = '';
+  function buildLayer(container, inputCount, outputCount, opts){
+    container.innerHTML='';
     const svg = document.createElementNS(svgNS,'svg');
-    svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+    svg.setAttribute('viewBox', `0 0 ${dims.w} ${dims.h}`);
     container.appendChild(svg);
 
     const defs = document.createElementNS(svgNS,'defs');
@@ -30,35 +32,36 @@
     defs.appendChild(marker);
     svg.appendChild(defs);
 
-    const colX = { input: padding, output: width - padding };
-    const rowY = (i) => size === 1 ? height/2 : padding + i * ((height - 2*padding)/(size - 1));
+    const colX = { input: padding, output: dims.w - padding };
+    const rowYInput = (i) => inputCount === 1 ? dims.h/2 : padding + i * ((dims.h - 2*padding)/(inputCount - 1));
+    const rowYOutput = (i) => outputCount === 1 ? dims.h/2 : padding + i * ((dims.h - 2*padding)/(outputCount - 1));
 
-    const inputs = Array.from({length:size}, (_,i)=>({ id:`h${i+1}`, x:colX.input, y:rowY(i) }));
-    // Outputs: leave labels blank per request
-    const outputs = Array.from({length:size}, (_,i)=>({ id:'', x:colX.output, y:rowY(i) }));
+    const inputs = Array.from({length:inputCount}, (_,i)=>({ id: opts.inputPrefix + (i+1), x: colX.input, y: rowYInput(i) }));
+    const outputs = Array.from({length:outputCount}, (_,i)=>({ id:'', x: colX.output, y: rowYOutput(i) }));
 
-    const edges = [];
-    inputs.forEach(inp => outputs.forEach(out => edges.push({ from: inp, to: out })));
-
-    edges.forEach(e => {
+    // edges
+    inputs.forEach(inp => outputs.forEach(out => {
       const line = document.createElementNS(svgNS,'line');
-      line.setAttribute('x1', e.from.x + 25);
-      line.setAttribute('y1', e.from.y);
-      line.setAttribute('x2', e.to.x - 25);
-      line.setAttribute('y2', e.to.y);
+      line.setAttribute('x1', inp.x + 25);
+      line.setAttribute('y1', inp.y);
+      line.setAttribute('x2', out.x - 25);
+      line.setAttribute('y2', out.y);
       line.classList.add('edge');
       svg.appendChild(line);
-    });
+    }));
 
-    function drawNode(n, type){
+    function drawNode(n, isInput){
       const g = document.createElementNS(svgNS,'g');
       const c = document.createElementNS(svgNS,'circle');
       c.setAttribute('cx', n.x);
       c.setAttribute('cy', n.y);
       c.setAttribute('r', 25);
-      c.classList.add('node', type);
+      c.classList.add('node');
+      if(opts.nodeClass){
+        c.classList.add(opts.nodeClass);
+      }
       g.appendChild(c);
-      if(type === 'input'){ // only show input labels (h1..hN)
+      if(isInput){
         const label = document.createElementNS(svgNS,'text');
         label.setAttribute('x', n.x);
         label.setAttribute('y', n.y + 4);
@@ -70,17 +73,23 @@
       svg.appendChild(g);
     }
 
-    inputs.forEach(n => drawNode(n,'input'));
-    outputs.forEach(n => drawNode(n,'output'));
+    inputs.forEach(n => drawNode(n,true));
+    outputs.forEach(n => drawNode(n,false));
 
-    window._network = { inputs, outputs, edges };
+    return { inputs, outputs };
   }
 
-  sizeSlider.addEventListener('input', () => {
-    const val = parseInt(sizeSlider.value,10);
-    sizeValue.textContent = val;
-    buildNetwork(val);
-  });
+  function rebuild(){
+    const hiddenSize = parseInt(hiddenSlider.value,10);
+    const inputSize = parseInt(inputSlider.value,10);
+    hiddenValue.textContent = hiddenSize;
+    inputValue.textContent = inputSize;
+    buildLayer(containerHidden, hiddenSize, hiddenSize, { inputPrefix: 'h' });
+    buildLayer(containerInputHidden, inputSize, hiddenSize, { inputPrefix: 'x', nodeClass: 'secondary' });
+  }
 
-  buildNetwork(parseInt(sizeSlider.value,10));
+  hiddenSlider.addEventListener('input', rebuild);
+  inputSlider.addEventListener('input', rebuild);
+
+  rebuild();
 })();

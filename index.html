@@ -12,16 +12,27 @@
     <p>This diagram shows a simple fully connected layer: three inputs mapping to three outputs before any activation function is applied.</p>
   </header>
   <main>
-    <div class="size-control">
-      <label for="hiddenSize">Hidden Size: <span id="sizeValue">3</span></label>
-      <input type="range" id="hiddenSize" min="1" max="5" value="3" />
+    <div class="global-controls">
+      <div class="size-control">
+        <label for="inputSize">Input Size: <span id="inputSizeValue">3</span></label>
+        <input type="range" id="inputSize" min="1" max="5" value="3" />
+      </div>
+      <div class="size-control">
+        <label for="hiddenSize">Hidden Size: <span id="sizeValue">3</span></label>
+        <input type="range" id="hiddenSize" min="1" max="5" value="3" />
+      </div>
     </div>
-    <div id="network-container">
-      <!-- SVG injected by script.js -->
-    </div>
+    <section class="panel">
+      <h2>Hidden State Layer</h2>
+      <div id="network-container" class="network-box" aria-label="Hidden state network"></div>
+    </section>
+    <section class="panel">
+      <h2>Input → Hidden Mapping</h2>
+      <div id="network-container-2" class="network-box" aria-label="Input to hidden mapping network"></div>
+    </section>
   </main>
   <footer>
-    <small>Visualization: nodes (circles) and weighted connections (arrows). Animation cycles through edges mimicking signal propagation.</small>
+    <small>Visualization: two fully connected layers. Hidden size controls hidden/output width; input size controls input width of second panel.</small>
   </footer>
   <script src="script.js"></script>
 </body>
