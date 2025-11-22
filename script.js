@@ -228,14 +228,15 @@
     const svg = document.createElementNS(svgNS,'svg');
     svg.setAttribute('viewBox', `0 0 ${dims.w} ${dims.h}`);
     container.appendChild(svg);
-    const size = 40; // vertical spacing reference (matching square size)
-    const centerX = dims.w/2; // triangles centered horizontally
+    // Vertical positioning for triangle vector (cell state candidates)
+    const centerX = dims.w/2; // triangles horizontally centered
     const rowY = (i) => count === 1 ? (dims.h/2) : (padding + i * ((dims.h - 2*padding)/(count - 1)));
     const minY = rowY(0);
     const maxY = rowY(count - 1);
     const midY = (minY + maxY) / 2;
+    // Left label
     const label = document.createElementNS(svgNS,'text');
-    label.textContent = 'base \u2192';
+    label.textContent = 'base →';
     label.setAttribute('x', centerX - 60);
     label.setAttribute('y', midY + 6);
     label.setAttribute('text-anchor','end');
@@ -359,7 +360,6 @@
     containerTarget.innerHTML = ''; // keep target panel blank initially
     currentHiddenOutputs = layerHidden.outputs;
     currentInputHiddenOutputs = layerInputHidden.outputs;
-    // Update shape displays: (inputs × outputs)
     const shapeWh = document.getElementById('shapeWh');
     const shapeWx = document.getElementById('shapeWx');
     if(shapeWh) shapeWh.textContent = `(${hiddenSize} × ${hiddenSize})`;
@@ -1266,11 +1266,31 @@
     bottomLine1.setAttribute('y2', bottomY);
     bottomLine1.classList.add('lstm-path-line');
     svg.appendChild(bottomLine1);
+    // Upward external x input line from below panel into bottom line (left of first vertical arrow)
+    const feedX = panelX + 40; // ensure to left of first vertical arrow
+    const feedStartY = bottomY + 110; // start well below panel
+    const feedLine = document.createElementNS(svgNS,'line');
+    feedLine.setAttribute('x1', feedX);
+    feedLine.setAttribute('y1', feedStartY);
+    feedLine.setAttribute('x2', feedX);
+    feedLine.setAttribute('y2', bottomY);
+    feedLine.setAttribute('stroke','#9333ea');
+    feedLine.setAttribute('stroke-width','3');
+    feedLine.setAttribute('marker-end','url(#lstmSimpleArrow)');
+    svg.appendChild(feedLine);
+    const xLabel = document.createElementNS(svgNS,'text');
+    xLabel.textContent = 'x';
+    xLabel.setAttribute('x', feedX - 6);
+    xLabel.setAttribute('y', feedStartY + 5);
+    xLabel.setAttribute('text-anchor','end');
+    xLabel.classList.add('lstm-label');
+    svg.appendChild(xLabel);
     // Four equally spaced upward arrows from first bottom segment to top line
     const upwardCount = 4;
     // Distribute across entire first bottom segment (from panelX to bottomFirstEnd)
     const startXBottom = panelX;
     const spanWidth = bottomFirstEnd - startXBottom;
+    let firstVerticalArrow = null;
     for(let i=1;i<=upwardCount;i++){
       // Distribute so last arrow sits exactly at bottomFirstEnd
       const xPos = startXBottom + (i * spanWidth)/upwardCount;
@@ -1288,6 +1308,9 @@
       upLine.setAttribute('stroke-width','3');
       upLine.setAttribute('marker-end','url(#lstmSimpleArrow)');
       svg.appendChild(upLine);
+      if(i === 1){
+        firstVerticalArrow = upLine;
+      }
     }
     // Add bent second arrow: curve from bottom at second x up and right to meet third vertical arrow mid-height
     if(svg._verticalXs && svg._verticalXs.length === upwardCount){
@@ -1316,6 +1339,26 @@
       path4.setAttribute('stroke-width','3');
       path4.setAttribute('marker-end','url(#lstmSimpleArrow)');
       svg.appendChild(path4);
+    }
+    // Relocate multiply node onto first vertical arrow if available
+    if(firstVerticalArrow){
+      const firstX = firstVerticalArrow.getAttribute('x1');
+      // Shorten arrow so it stops below circle (circle radius 16 -> leave gap ~18)
+      firstVerticalArrow.setAttribute('y2', (topY - 18));
+      const multCircle = document.createElementNS(svgNS,'circle');
+      multCircle.setAttribute('cx', firstX);
+      multCircle.setAttribute('cy', topY);
+      multCircle.setAttribute('r', 16);
+      multCircle.setAttribute('fill','#1e293b');
+      multCircle.setAttribute('stroke','#64748b');
+      multCircle.setAttribute('stroke-width','2');
+      svg.appendChild(multCircle);
+      const multText = document.createElementNS(svgNS,'text');
+      multText.textContent = '×';
+      multText.setAttribute('x', firstX);
+      multText.setAttribute('y', topY + 5);
+      multText.classList.add('lstm-op');
+      svg.appendChild(multText);
     }
     // Second segment
     const bottomLine2 = document.createElementNS(svgNS,'line');
