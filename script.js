@@ -1318,14 +1318,33 @@
       const thirdX = svg._verticalXs[2];
       const midY = (bottomY + topY)/2;
       const path = document.createElementNS(svgNS,'path');
-      // Right-angle bend: vertical then horizontal to third arrow midY
-      const d = `M ${secondX} ${bottomY} L ${secondX} ${midY} L ${thirdX} ${midY}`;
+      // Right-angle bend: vertical then horizontal stopping before circle so arrowhead is visible
+      const circleRadius = 18; // smaller circle at tip
+      const arrowHeadAllowance = 10; // space for arrowhead marker
+      const finalX = thirdX - (circleRadius + arrowHeadAllowance);
+      const d = `M ${secondX} ${bottomY} L ${secondX} ${midY} L ${finalX} ${midY}`;
       path.setAttribute('d', d);
       path.setAttribute('fill','none');
       path.setAttribute('stroke','#9333ea');
       path.setAttribute('stroke-width','3');
       path.setAttribute('marker-end','url(#lstmSimpleArrow)');
       svg.appendChild(path);
+      // Circle placed at true tip location (thirdX, midY)
+      const tipCircle = document.createElementNS(svgNS,'circle');
+      tipCircle.setAttribute('cx', thirdX);
+      tipCircle.setAttribute('cy', midY);
+      tipCircle.setAttribute('r', circleRadius);
+      tipCircle.setAttribute('fill','#1e293b');
+      tipCircle.setAttribute('stroke','#64748b');
+      tipCircle.setAttribute('stroke-width','2');
+      svg.appendChild(tipCircle);
+      // Text '×' inside second circle (unified operator style)
+      const tipText = document.createElementNS(svgNS,'text');
+      tipText.textContent = '×';
+      tipText.setAttribute('x', thirdX);
+      tipText.setAttribute('y', midY);
+      tipText.classList.add('lstm-op-circle');
+      svg.appendChild(tipText);
       // Fourth arrow bent into vertical connector at start of second bottom segment
       const fourthX = svg._verticalXs[3];
       const connectorX = bottomSecondStart; // vertical connector x
@@ -1343,12 +1362,15 @@
     // Relocate multiply node onto first vertical arrow if available
     if(firstVerticalArrow){
       const firstX = firstVerticalArrow.getAttribute('x1');
-      // Shorten arrow so it stops below circle (circle radius 16 -> leave gap ~18)
-      firstVerticalArrow.setAttribute('y2', (topY - 18));
+      const multRadius = 18; // reduce size for consistency with second arrow tip circle
+      // Place arrow head below circle: end at circle bottom boundary minus small gap (2px)
+      // Circle bottom boundary = topY + multRadius; arrow end y increases downward.
+      const arrowEndY = topY + multRadius - 2; // visible just below circle
+      firstVerticalArrow.setAttribute('y2', arrowEndY);
       const multCircle = document.createElementNS(svgNS,'circle');
       multCircle.setAttribute('cx', firstX);
       multCircle.setAttribute('cy', topY);
-      multCircle.setAttribute('r', 16);
+      multCircle.setAttribute('r', multRadius);
       multCircle.setAttribute('fill','#1e293b');
       multCircle.setAttribute('stroke','#64748b');
       multCircle.setAttribute('stroke-width','2');
@@ -1356,8 +1378,8 @@
       const multText = document.createElementNS(svgNS,'text');
       multText.textContent = '×';
       multText.setAttribute('x', firstX);
-      multText.setAttribute('y', topY + 5);
-      multText.classList.add('lstm-op');
+      multText.setAttribute('y', topY);
+      multText.classList.add('lstm-op-circle');
       svg.appendChild(multText);
     }
     // Second segment

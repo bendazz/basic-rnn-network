@@ -110,6 +110,9 @@ footer { opacity:.6; text-align:center; }
 .lstm-hidden-circle { fill:#12161c; stroke:#f59e0b; stroke-width:2; }
 .lstm-cell-triangle { fill:none; stroke:#ec4899; stroke-width:2.5; }
 .lstm-op { fill:#e6e9ed; font-size:14px; font-weight:600; text-anchor:middle; dominant-baseline:middle; }
+.lstm-op-large { fill:#e6e9ed; font-size:22px; font-weight:600; text-anchor:middle; dominant-baseline:middle; }
+/* Unified smaller operator style for circle operators */
+.lstm-op-circle { fill:#e6e9ed; font-size:18px; font-weight:600; text-anchor:middle; dominant-baseline:middle; }
 .lstm-label { fill:#e6e9ed; font-size:12px; font-weight:600; text-anchor:middle; dominant-baseline:middle; }
 .lstm-weight-label { fill:#e6e9ed; font-size:14px; font-weight:600; }
 .lstm-connector { stroke:#475569; stroke-width:2; opacity:.65; }
