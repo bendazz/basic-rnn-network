@@ -67,7 +67,7 @@ footer { opacity:.6; text-align:center; }
 .rnn-output-label { fill:#e6e9ed; font-size:12px; font-weight:600; text-anchor:middle; dominant-baseline:middle; }
 .forget-output-circle { fill:#1e1b4b; stroke:#9333ea; stroke-width:2; opacity:0; }
 .forget-output-circle.visible { opacity:1; transition: opacity .5s ease; }
-.forget-c-triangle { fill:#ef4444; stroke:#ef4444; stroke-width:2; opacity:0; }
+.forget-c-triangle { fill:none; stroke:#ec4899; stroke-width:2.5; opacity:0; }
 .forget-c-triangle.visible { opacity:1; transition: opacity .6s ease .2s; }
 .forget-op { fill:#e6e9ed; font-size:32px; font-weight:600; opacity:0; }
 .forget-op.visible { opacity:1; transition: opacity .4s ease; }
@@ -81,3 +81,10 @@ footer { opacity:.6; text-align:center; }
 .square-node.input-flash { animation: forget-flash-yellow 700ms ease-in-out; }
 .input-output-circle { fill:#1e1b4b; stroke:#9333ea; stroke-width:2; opacity:0; }
 .input-output-circle.visible { opacity:1; transition: opacity .5s ease; }
+/* Combined panel operators */
+.combined-op { fill:#e6e9ed; font-size:28px; font-weight:600; opacity:0; }
+.combined-op.visible { opacity:1; transition: opacity .4s ease; }
+.triangle-label { fill:#ec4899; font-size:12px; font-weight:600; text-anchor:middle; dominant-baseline:middle; opacity:0; }
+.triangle-label.visible { opacity:1; transition: opacity .4s ease .15s; }
+/* Input Gate second panel tanh flash (red) */
+.square-node.input-tanh-flash { animation: rnn-flash-red 700ms ease-in-out; }
