@@ -45,12 +45,15 @@
   const outputGateHiddenValue = document.getElementById('outputGateHiddenValue');
   const outputGatePanel1 = document.getElementById('output-gate-panel-1');
   const outputGatePanel2 = document.getElementById('output-gate-panel-2');
+  const outputGatePanel3 = document.getElementById('output-gate-panel-3');
   const outputGateAnimateBtn = document.getElementById('outputGateAnimateBtn');
   const outputGateResetBtn = document.getElementById('outputGateResetBtn');
   let outputGateLayout = null;
   let outputGatePanel2Layout = null;
   let outputGateAnimated = false;
   let outputGateTimeoutId = null;
+  let outputGateOverlay = null;
+  let outputGateCombinedAnimated = false;
 
   // Overlay SVG for animation clones
   let overlaySvgHidden = null;
@@ -542,6 +545,7 @@
   function rebuildOutputGate(){
     if(!outputGateHiddenSlider || !outputGateHiddenValue || !outputGatePanel1) return;
     if(outputGateTimeoutId){ clearTimeout(outputGateTimeoutId); outputGateTimeoutId = null; }
+    if(outputGateOverlay){ outputGateOverlay.remove(); outputGateOverlay = null; }
     const n = parseInt(outputGateHiddenSlider.value,10);
     outputGateHiddenValue.textContent = n;
     outputGateLayout = buildOutputGateTriangleVector(outputGatePanel1, n);
@@ -549,7 +553,9 @@
     if(outputGatePanel2){
       outputGatePanel2Layout = buildInputGateVector(outputGatePanel2, n);
     }
+    if(outputGatePanel3){ outputGatePanel3.innerHTML=''; }
     outputGateAnimated = false;
+    outputGateCombinedAnimated = false;
   }
   if(outputGateHiddenSlider){
     outputGateHiddenSlider.addEventListener('input', rebuildOutputGate);
@@ -679,15 +685,131 @@
       }
       outputGateAnimated = true;
       outputGateTimeoutId = null;
+      runOutputGateCombined();
     }, delay);
   }
   function resetOutputGate(){
     if(outputGateTimeoutId){ clearTimeout(outputGateTimeoutId); outputGateTimeoutId = null; }
     outputGateAnimated = false;
+    outputGateCombinedAnimated = false;
+    if(outputGateOverlay){ outputGateOverlay.remove(); outputGateOverlay = null; }
     rebuildOutputGate();
   }
   if(outputGateAnimateBtn){ outputGateAnimateBtn.addEventListener('click', animateOutputGate); }
   if(outputGateResetBtn){ outputGateResetBtn.addEventListener('click', resetOutputGate); }
+
+  function runOutputGateCombined(){
+    if(outputGateCombinedAnimated || !outputGatePanel3) return;
+    // Collect circles from panel1 and panel2
+    const circles1 = outputGatePanel1.querySelectorAll('circle.output-gate-circle');
+    const circles2 = outputGatePanel2.querySelectorAll('circle.output-gate-circle');
+    if(circles1.length === 0 || circles2.length === 0) return;
+    const section = outputGatePanel1.closest('.panels-row');
+    const rowRect = section.getBoundingClientRect();
+    outputGateOverlay = document.createElementNS(svgNS,'svg');
+    outputGateOverlay.classList.add('overlay-layer');
+    outputGateOverlay.style.left = rowRect.left + window.scrollX + 'px';
+    outputGateOverlay.style.top = rowRect.top + window.scrollY + 'px';
+    outputGateOverlay.style.width = rowRect.width + 'px';
+    outputGateOverlay.style.height = rowRect.height + 'px';
+    outputGateOverlay.setAttribute('viewBox', `0 0 ${rowRect.width} ${rowRect.height}`);
+    document.body.appendChild(outputGateOverlay);
+
+    const panel3Rect = outputGatePanel3.getBoundingClientRect();
+    const count = circles1.length; // assume same length
+    function circleCenter(c){
+      const r = c.getBoundingClientRect();
+      return { x: r.left - rowRect.left + r.width/2, y: r.top - rowRect.top + r.height/2 };
+    }
+    function targetRowY(i){
+      const h = panel3Rect.height;
+      return count === 1 ? h/2 : 70 + i * ((h - 140)/(count - 1));
+    }
+    const col1X = panel3Rect.left - rowRect.left + 70;
+    const colGap = 110;
+    const col2X = col1X + colGap;
+    const resultColX = col2X + colGap + colGap; // leave space for operator and equals
+    const multX = (col1X + col2X)/2;
+    const equalsX = (col2X + resultColX)/2;
+
+    const clones = [];
+    circles1.forEach((c,i)=>{
+      const start = circleCenter(c);
+      const clone = document.createElementNS(svgNS,'circle');
+      clone.setAttribute('cx', start.x);
+      clone.setAttribute('cy', start.y);
+      clone.setAttribute('r', 24);
+      clone.setAttribute('fill', '#12161c');
+      clone.setAttribute('stroke', '#9333ea');
+      clone.setAttribute('stroke-width','2');
+      outputGateOverlay.appendChild(clone);
+      clones.push({ el: clone, start, end: { x: col1X, y: panel3Rect.top - rowRect.top + targetRowY(i) } });
+    });
+    circles2.forEach((c,i)=>{
+      const start = circleCenter(c);
+      const clone = document.createElementNS(svgNS,'circle');
+      clone.setAttribute('cx', start.x);
+      clone.setAttribute('cy', start.y);
+      clone.setAttribute('r', 24);
+      clone.setAttribute('fill', '#12161c');
+      clone.setAttribute('stroke', '#9333ea');
+      clone.setAttribute('stroke-width','2');
+      outputGateOverlay.appendChild(clone);
+      clones.push({ el: clone, start, end: { x: col2X, y: panel3Rect.top - rowRect.top + targetRowY(i) } });
+    });
+
+    const duration = 1000;
+    const startTs = performance.now();
+    function frame(ts){
+      const t = Math.min(1, (ts - startTs)/duration);
+      const ease = t*t;
+      clones.forEach(obj => {
+        const nx = obj.start.x + (obj.end.x - obj.start.x)*ease;
+        const ny = obj.start.y + (obj.end.y - obj.start.y)*ease;
+        obj.el.setAttribute('cx', nx);
+        obj.el.setAttribute('cy', ny);
+      });
+      if(t < 1){ requestAnimationFrame(frame); } else { finalize(); }
+    }
+    requestAnimationFrame(frame);
+
+    function finalize(){
+      const midY = panel3Rect.top - rowRect.top + targetRowY(Math.floor((count-1)/2));
+      function addOp(x, char){
+        const t = document.createElementNS(svgNS,'text');
+        t.textContent = char;
+        t.setAttribute('x', x);
+        t.setAttribute('y', midY);
+        t.setAttribute('text-anchor','middle');
+        t.classList.add('combined-op');
+        outputGateOverlay.appendChild(t);
+        requestAnimationFrame(()=> t.classList.add('visible'));
+      }
+      addOp(multX, '×');
+      addOp(equalsX, '=');
+      // Result vector orange circles labeled h'1, h'2, ...
+      for(let i=0;i<count;i++){
+        const y = panel3Rect.top - rowRect.top + targetRowY(i);
+        const circle = document.createElementNS(svgNS,'circle');
+        circle.setAttribute('cx', resultColX);
+        circle.setAttribute('cy', y);
+        circle.setAttribute('r', 24);
+        circle.setAttribute('fill', '#12161c');
+        circle.setAttribute('stroke', '#f59e0b');
+        circle.setAttribute('stroke-width','3');
+        outputGateOverlay.appendChild(circle);
+        const label = document.createElementNS(svgNS,'text');
+        label.textContent = `h'${i+1}`;
+        label.setAttribute('x', resultColX);
+        label.setAttribute('y', y + 1);
+        label.setAttribute('text-anchor','middle');
+        label.classList.add('rnn-output-label');
+        outputGateOverlay.appendChild(label);
+        requestAnimationFrame(()=> { circle.classList.add('visible'); label.classList.add('visible'); });
+      }
+      outputGateCombinedAnimated = true;
+    }
+  }
   function resetInputGate(){
     if(inputGateTimeoutId){ clearTimeout(inputGateTimeoutId); inputGateTimeoutId = null; }
     inputGateAnimated = false;
