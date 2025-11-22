@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Base RNN / LSTM Pre-Activation Network</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Base Neural Network (Pre-Activation)</h1>
+    <p>This diagram shows a simple fully connected layer: three inputs mapping to three outputs before any activation function is applied.</p>
+  </header>
+  <main>
+    <div class="size-control">
+      <label for="hiddenSize">Hidden Size: <span id="sizeValue">3</span></label>
+      <input type="range" id="hiddenSize" min="1" max="5" value="3" />
+    </div>
+    <div id="network-container">
+      <!-- SVG injected by script.js -->
+    </div>
+  </main>
+  <footer>
+    <small>Visualization: nodes (circles) and weighted connections (arrows). Animation cycles through edges mimicking signal propagation.</small>
+  </footer>
+  <script src="script.js"></script>
+</body>
+</html>
