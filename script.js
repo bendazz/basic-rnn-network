@@ -1349,6 +1349,22 @@
       tipText.setAttribute('y', midY);
       tipText.classList.add('lstm-op-circle');
       svg.appendChild(tipText);
+      // Activation rectangle (σ) for second arrow centered along its vertical segment
+      const secondRectCenterY = bottomY + (midY - bottomY)/2;
+      const secondRect = document.createElementNS(svgNS,'rect');
+      secondRect.setAttribute('x', secondX - 20);
+      secondRect.setAttribute('y', secondRectCenterY - 13);
+      secondRect.setAttribute('width', 40);
+      secondRect.setAttribute('height', 26);
+      secondRect.setAttribute('rx', 6);
+      secondRect.classList.add('lstm-activation-rect');
+      svg.appendChild(secondRect);
+      const secondSigma = document.createElementNS(svgNS,'text');
+      secondSigma.textContent = 'σ';
+      secondSigma.setAttribute('x', secondX);
+      secondSigma.setAttribute('y', secondRectCenterY + 1);
+      secondSigma.classList.add('lstm-activation-symbol');
+      svg.appendChild(secondSigma);
       // Fourth arrow bent: up then right, stopping before circle so arrowhead visible
       const fourthX = svg._verticalXs[3];
       const connectorX = bottomSecondStart; // intended circle center
@@ -1366,6 +1382,22 @@
       svg.appendChild(path4);
       // Defer circle/text creation until after connector line for correct layering
       svg._fourthOpData = { connectorX, midY4, circleRadius4 };
+      // Activation rectangle (σ) for fourth arrow centered along its vertical segment
+      const fourthRectCenterY = bottomY + (midY4 - bottomY)/2;
+      const fourthRect = document.createElementNS(svgNS,'rect');
+      fourthRect.setAttribute('x', fourthX - 20);
+      fourthRect.setAttribute('y', fourthRectCenterY - 13);
+      fourthRect.setAttribute('width', 40);
+      fourthRect.setAttribute('height', 26);
+      fourthRect.setAttribute('rx', 6);
+      fourthRect.classList.add('lstm-activation-rect');
+      svg.appendChild(fourthRect);
+      const fourthSigma = document.createElementNS(svgNS,'text');
+      fourthSigma.textContent = 'σ';
+      fourthSigma.setAttribute('x', fourthX);
+      fourthSigma.setAttribute('y', fourthRectCenterY + 1);
+      fourthSigma.classList.add('lstm-activation-symbol');
+      svg.appendChild(fourthSigma);
     }
     // Relocate multiply node onto first vertical arrow if available
     if(firstVerticalArrow){
@@ -1389,6 +1421,22 @@
       multText.setAttribute('y', topY);
       multText.classList.add('lstm-op-circle');
       svg.appendChild(multText);
+      // Activation rectangle (σ) for first vertical arrow aligned with others (quarter from bottom)
+      const activationAlignY = bottomY + (((bottomY + topY)/2) - bottomY)/2; // same formula used for 2nd/4th
+      const firstRect = document.createElementNS(svgNS,'rect');
+      firstRect.setAttribute('x', firstX - 20);
+      firstRect.setAttribute('y', activationAlignY - 13);
+      firstRect.setAttribute('width', 40);
+      firstRect.setAttribute('height', 26);
+      firstRect.setAttribute('rx', 6);
+      firstRect.classList.add('lstm-activation-rect');
+      svg.appendChild(firstRect);
+      const firstSigma = document.createElementNS(svgNS,'text');
+      firstSigma.textContent = 'σ';
+      firstSigma.setAttribute('x', firstX);
+      firstSigma.setAttribute('y', activationAlignY + 1);
+      firstSigma.classList.add('lstm-activation-symbol');
+      svg.appendChild(firstSigma);
     }
     // Add plus circle at tip of third vertical arrow (top intersection)
     if(svg._thirdVerticalArrow){
@@ -1413,6 +1461,26 @@
       plusText.setAttribute('y', topY);
       plusText.classList.add('lstm-op-circle');
       svg.appendChild(plusText);
+      // Align tanh rectangle vertically with sigma rectangles (quarter from bottom)
+      const tanhAlignY = bottomY + (((bottomY + topY)/2) - bottomY)/2;
+      // Tanh activation rectangle centered along third vertical arrow span
+      const tanhRect = document.createElementNS(svgNS,'rect');
+      const tanhWidth = 56; // wider for 'tanh'
+      const tanhHeight = 26;
+      tanhRect.setAttribute('x', plusX - tanhWidth/2);
+      tanhRect.setAttribute('y', tanhAlignY - tanhHeight/2);
+      tanhRect.setAttribute('width', tanhWidth);
+      tanhRect.setAttribute('height', tanhHeight);
+      tanhRect.setAttribute('rx', 6);
+      tanhRect.classList.add('lstm-activation-rect-tanh');
+      // Insert before plus circle so plus circle stays visually on top
+      svg.insertBefore(tanhRect, plusCircle);
+      const tanhText = document.createElementNS(svgNS,'text');
+      tanhText.textContent = 'tanh';
+      tanhText.setAttribute('x', plusX);
+      tanhText.setAttribute('y', tanhAlignY + 1);
+      tanhText.classList.add('lstm-activation-symbol-tanh');
+      svg.insertBefore(tanhText, plusCircle);
     }
     // Second segment
     const bottomLine2 = document.createElementNS(svgNS,'line');
@@ -1433,6 +1501,25 @@
     // Now draw the deferred fourth multiply circle so it sits above lines
     if(svg._fourthOpData){
       const { connectorX, midY4, circleRadius4 } = svg._fourthOpData;
+      // Place tanh activation rectangle on the vertical connector line (to the right of previous placement)
+      // Position it above the multiply circle: center above by circle radius + spacing
+      const tanhSpacing = 30; // vertical spacing above circle center
+      const tanhWidth4 = 56, tanhHeight4 = 26;
+      const tanhCenterY4 = midY4 - (circleRadius4 + tanhSpacing);
+      const tanhRect4 = document.createElementNS(svgNS,'rect');
+      tanhRect4.setAttribute('x', connectorX - tanhWidth4/2);
+      tanhRect4.setAttribute('y', tanhCenterY4 - tanhHeight4/2);
+      tanhRect4.setAttribute('width', tanhWidth4);
+      tanhRect4.setAttribute('height', tanhHeight4);
+      tanhRect4.setAttribute('rx', 6);
+      tanhRect4.classList.add('lstm-activation-rect-tanh');
+      svg.appendChild(tanhRect4);
+      const tanhText4 = document.createElementNS(svgNS,'text');
+      tanhText4.textContent = 'tanh';
+      tanhText4.setAttribute('x', connectorX);
+      tanhText4.setAttribute('y', tanhCenterY4 + 1);
+      tanhText4.classList.add('lstm-activation-symbol-tanh');
+      svg.appendChild(tanhText4);
       const fourthCircle = document.createElementNS(svgNS,'circle');
       fourthCircle.setAttribute('cx', connectorX);
       fourthCircle.setAttribute('cy', midY4);

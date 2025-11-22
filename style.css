@@ -118,3 +118,9 @@ footer { opacity:.6; text-align:center; }
 .lstm-connector { stroke:#475569; stroke-width:2; opacity:.65; }
 .lstm-connector.emph { stroke:#9333ea; opacity:.9; }
 .lstm-path-line { stroke:#9333ea; stroke-width:3; fill:none; }
+/* Activation (sigma) overlay rectangles on vertical arrows */
+.lstm-activation-rect { fill:#1e1b4b; stroke:#eab308; stroke-width:2; }
+.lstm-activation-symbol { fill:#e6e9ed; font-size:16px; font-weight:600; text-anchor:middle; dominant-baseline:middle; }
+/* Tanh activation rectangle (third arrow) */
+.lstm-activation-rect-tanh { fill:#1e1b4b; stroke:#ef4444; stroke-width:2; }
+.lstm-activation-symbol-tanh { fill:#e6e9ed; font-size:14px; font-weight:600; text-anchor:middle; dominant-baseline:middle; letter-spacing:.5px; }
