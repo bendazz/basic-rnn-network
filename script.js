@@ -1311,6 +1311,10 @@
       if(i === 1){
         firstVerticalArrow = upLine;
       }
+      if(i === 3){
+        // Store reference to third vertical arrow for plus circle placement later
+        svg._thirdVerticalArrow = upLine;
+      }
     }
     // Add bent second arrow: curve from bottom at second x up and right to meet third vertical arrow mid-height
     if(svg._verticalXs && svg._verticalXs.length === upwardCount){
@@ -1345,19 +1349,23 @@
       tipText.setAttribute('y', midY);
       tipText.classList.add('lstm-op-circle');
       svg.appendChild(tipText);
-      // Fourth arrow bent into vertical connector at start of second bottom segment
+      // Fourth arrow bent: up then right, stopping before circle so arrowhead visible
       const fourthX = svg._verticalXs[3];
-      const connectorX = bottomSecondStart; // vertical connector x
-      const midY4 = (bottomY + topY)/2; // reuse midpoint height
+      const connectorX = bottomSecondStart; // intended circle center
+      const midY4 = (bottomY + topY)/2; // midpoint height for bend
+      const circleRadius4 = 18;
+      const arrowHeadAllowance4 = 10; // distance so marker does not overlap circle
+      const finalX4 = connectorX - (circleRadius4 + arrowHeadAllowance4);
       const path4 = document.createElementNS(svgNS,'path');
-      // Right-angle: up then right to connector vertical line midpoint
-      const d4 = `M ${fourthX} ${bottomY} L ${fourthX} ${midY4} L ${connectorX} ${midY4}`;
+      const d4 = `M ${fourthX} ${bottomY} L ${fourthX} ${midY4} L ${finalX4} ${midY4}`;
       path4.setAttribute('d', d4);
       path4.setAttribute('fill','none');
       path4.setAttribute('stroke','#9333ea');
       path4.setAttribute('stroke-width','3');
       path4.setAttribute('marker-end','url(#lstmSimpleArrow)');
       svg.appendChild(path4);
+      // Defer circle/text creation until after connector line for correct layering
+      svg._fourthOpData = { connectorX, midY4, circleRadius4 };
     }
     // Relocate multiply node onto first vertical arrow if available
     if(firstVerticalArrow){
@@ -1382,6 +1390,30 @@
       multText.classList.add('lstm-op-circle');
       svg.appendChild(multText);
     }
+    // Add plus circle at tip of third vertical arrow (top intersection)
+    if(svg._thirdVerticalArrow){
+      const plusRadius = 18;
+      // Restore arrowhead marker and shorten arrow so head sits just below circle
+      svg._thirdVerticalArrow.setAttribute('marker-end','url(#lstmSimpleArrow)');
+      const plusX = svg._thirdVerticalArrow.getAttribute('x1');
+      const arrowHeadGap = 2; // small gap below circle
+      // y2 increases downward; set to topY + plusRadius - arrowHeadGap for visibility
+      svg._thirdVerticalArrow.setAttribute('y2', (topY + plusRadius - arrowHeadGap));
+      const plusCircle = document.createElementNS(svgNS,'circle');
+      plusCircle.setAttribute('cx', plusX);
+      plusCircle.setAttribute('cy', topY);
+      plusCircle.setAttribute('r', plusRadius);
+      plusCircle.setAttribute('fill','#1e293b');
+      plusCircle.setAttribute('stroke','#64748b');
+      plusCircle.setAttribute('stroke-width','2');
+      svg.appendChild(plusCircle);
+      const plusText = document.createElementNS(svgNS,'text');
+      plusText.textContent = '+';
+      plusText.setAttribute('x', plusX);
+      plusText.setAttribute('y', topY);
+      plusText.classList.add('lstm-op-circle');
+      svg.appendChild(plusText);
+    }
     // Second segment
     const bottomLine2 = document.createElementNS(svgNS,'line');
     bottomLine2.setAttribute('x1', bottomSecondStart);
@@ -1398,6 +1430,25 @@
     secondSegConnector.setAttribute('y2', topY);
     secondSegConnector.classList.add('lstm-path-line');
     svg.appendChild(secondSegConnector);
+    // Now draw the deferred fourth multiply circle so it sits above lines
+    if(svg._fourthOpData){
+      const { connectorX, midY4, circleRadius4 } = svg._fourthOpData;
+      const fourthCircle = document.createElementNS(svgNS,'circle');
+      fourthCircle.setAttribute('cx', connectorX);
+      fourthCircle.setAttribute('cy', midY4);
+      fourthCircle.setAttribute('r', circleRadius4);
+      fourthCircle.setAttribute('fill','#1e293b');
+      fourthCircle.setAttribute('stroke','#64748b');
+      fourthCircle.setAttribute('stroke-width','2');
+      svg.appendChild(fourthCircle);
+      const fourthText = document.createElementNS(svgNS,'text');
+      fourthText.textContent = '×';
+      fourthText.setAttribute('x', connectorX);
+      fourthText.setAttribute('y', midY4);
+      fourthText.classList.add('lstm-op-circle');
+      svg.appendChild(fourthText);
+      delete svg._fourthOpData;
+    }
     // Outgoing arrows (outputs) from right edge
     const outArrowLength = 120;
     // Top output C'
