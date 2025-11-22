@@ -389,6 +389,7 @@
     forgetHiddenValue.textContent = n;
     forgetVectorLayout = buildForgetVector(forgetVectorContainer, n);
     forgetAnimated = false;
+    // shape display removed with dynamic label; no static span anymore
   }
   if(forgetHiddenSlider){
     forgetHiddenSlider.addEventListener('input', rebuildForget);
@@ -461,25 +462,55 @@
     const delay = 700;
     forgetTimeoutId = setTimeout(()=>{
       const outputX = centerX + size + 140;
-      rows.forEach((ry)=>{
-        const yCenter = ry + size/2;
-        const line = document.createElementNS(svgNS,'line');
-        line.setAttribute('x1', centerX + size);
-        line.setAttribute('y1', yCenter);
-        line.setAttribute('x2', outputX - 26);
-        line.setAttribute('y2', yCenter);
-        line.setAttribute('stroke','#9333ea');
-        line.setAttribute('stroke-width','2');
-        line.setAttribute('marker-end','url(#forgetArrowHead)');
-        svg.appendChild(line);
+      const circleCenters = rows.map(ry => ry + size/2);
+      // Fully connected: each square to each circle
+      const squareCenters = rows.map(ry => ry + size/2);
+      squareCenters.forEach(sqY => {
+        circleCenters.forEach(cY => {
+          const line = document.createElementNS(svgNS,'line');
+          line.setAttribute('x1', centerX + size);
+          line.setAttribute('y1', sqY);
+          line.setAttribute('x2', outputX - 26);
+          line.setAttribute('y2', cY);
+          line.setAttribute('stroke','#9333ea');
+          line.setAttribute('stroke-width','2');
+          line.setAttribute('marker-end','url(#forgetArrowHead)');
+          svg.appendChild(line);
+        });
+      });
+      // Circles on top
+      circleCenters.forEach(cY => {
         const c = document.createElementNS(svgNS,'circle');
         c.setAttribute('cx', outputX);
-        c.setAttribute('cy', yCenter);
+        c.setAttribute('cy', cY);
         c.setAttribute('r', 24);
         c.classList.add('forget-output-circle');
         svg.appendChild(c);
         requestAnimationFrame(()=> c.classList.add('visible'));
       });
+      // Add dynamic inline Wf label centered between squares and circles
+      const squareCenterX = centerX + size/2;
+      const weightMidX = (squareCenterX + outputX) / 2;
+      const weightLabel = document.createElementNS(svgNS,'text');
+      // Build 'Wf' with subscript
+      weightLabel.textContent='';
+      const baseWf = document.createTextNode('W');
+      const subF = document.createElementNS(svgNS,'tspan');
+      subF.textContent='f';
+      subF.classList.add('subscript');
+      weightLabel.appendChild(baseWf);
+      weightLabel.appendChild(subF);
+      const dimsTextF = document.createTextNode(` (${rows.length}×${rows.length})`);
+      weightLabel.appendChild(dimsTextF);
+      weightLabel.setAttribute('x', weightMidX);
+      // Place label above top connections
+      const topConnectionY = circleCenters[0] - size/2 - 18;
+      weightLabel.setAttribute('y', topConnectionY < 18 ? 18 : topConnectionY);
+      weightLabel.setAttribute('text-anchor','middle');
+      weightLabel.classList.add('inline-matrix-label');
+      svg.appendChild(weightLabel);
+      requestAnimationFrame(()=> weightLabel.classList.add('visible'));
+
       // Multiplication operator and C vector to right
       const lastY = rows[rows.length-1] + size/2;
       const firstY = rows[0] + size/2;
@@ -571,54 +602,108 @@
     const { svg, size, centerX, rows, squares } = inputGateLayout;
     squares.forEach(sq => { sq.classList.remove('input-flash'); void sq.offsetWidth; sq.classList.add('input-flash'); });
     if(inputGateTanhLayout){
-      // Make second panel identical: use same flash class as first panel
+      // Second panel should show tanh (red) flash
       const { squares: panel2Squares } = inputGateTanhLayout;
-      panel2Squares.forEach(sq => { sq.classList.remove('input-flash'); void sq.offsetWidth; sq.classList.add('input-flash'); });
+      panel2Squares.forEach(sq => { sq.classList.remove('input-tanh-flash'); void sq.offsetWidth; sq.classList.add('input-tanh-flash'); });
     }
     const delay = 700;
     inputGateTimeoutId = setTimeout(()=>{
       const outputX = centerX + size + 140;
-      rows.forEach((ry)=>{
-        const yCenter = ry + size/2;
-        const line = document.createElementNS(svgNS,'line');
-        line.setAttribute('x1', centerX + size);
-        line.setAttribute('y1', yCenter);
-        line.setAttribute('x2', outputX - 26);
-        line.setAttribute('y2', yCenter);
-        line.setAttribute('stroke','#9333ea');
-        line.setAttribute('stroke-width','2');
-        line.setAttribute('marker-end','url(#inputGateArrowHead)');
-        svg.appendChild(line);
+      const squareCenters = rows.map(r => r + size/2);
+      const circleCenters = squareCenters.slice(); // same vertical layout
+      // Fully connected edges: each square to each circle
+      squareCenters.forEach(sqY => {
+        circleCenters.forEach(cY => {
+          const line = document.createElementNS(svgNS,'line');
+          line.setAttribute('x1', centerX + size);
+          line.setAttribute('y1', sqY);
+          line.setAttribute('x2', outputX - 26);
+          line.setAttribute('y2', cY);
+          line.setAttribute('stroke','#9333ea');
+          line.setAttribute('stroke-width','2');
+          line.setAttribute('marker-end','url(#inputGateArrowHead)');
+          svg.appendChild(line);
+        });
+      });
+      // Circles rendered on top
+      circleCenters.forEach(cY => {
         const c = document.createElementNS(svgNS,'circle');
         c.setAttribute('cx', outputX);
-        c.setAttribute('cy', yCenter);
+        c.setAttribute('cy', cY);
         c.setAttribute('r', 24);
         c.classList.add('input-output-circle');
         svg.appendChild(c);
         requestAnimationFrame(()=> c.classList.add('visible'));
       });
+      // Dynamic inline Wi label (sigmoid weights) centered between squares and circles
+      const squareCenterX = centerX + size/2;
+      const weightMidX = (squareCenterX + outputX)/2;
+      const weightLabelWi = document.createElementNS(svgNS,'text');
+      // Build 'Wi' with subscript
+      weightLabelWi.textContent='';
+      const baseWi = document.createTextNode('W');
+      const subI = document.createElementNS(svgNS,'tspan');
+      subI.textContent='i';
+      subI.classList.add('subscript');
+      weightLabelWi.appendChild(baseWi);
+      weightLabelWi.appendChild(subI);
+      const dimsTextI = document.createTextNode(` (${rows.length}×${rows.length})`);
+      weightLabelWi.appendChild(dimsTextI);
+      const topConnY = rows[0] + size/2 - size/2 - 18;
+      weightLabelWi.setAttribute('x', weightMidX);
+      weightLabelWi.setAttribute('y', topConnY < 18 ? 18 : topConnY);
+      weightLabelWi.setAttribute('text-anchor','middle');
+      weightLabelWi.classList.add('inline-matrix-label');
+      svg.appendChild(weightLabelWi);
+      requestAnimationFrame(()=> weightLabelWi.classList.add('visible'));
       if(inputGateTanhLayout){
         const { svg: tanhSvg, size: tSize, centerX: tCenterX, rows: tRows } = inputGateTanhLayout;
         const tOutputX = tCenterX + tSize + 140;
-        tRows.forEach((ry)=>{
-          const yCenter = ry + tSize/2;
+        const tSquareCenters = tRows.map(r => r + tSize/2);
+        const tCircleCenters = tSquareCenters.slice();
+        tSquareCenters.forEach(sqY => {
+          tCircleCenters.forEach(cY => {
             const line = document.createElementNS(svgNS,'line');
             line.setAttribute('x1', tCenterX + tSize);
-            line.setAttribute('y1', yCenter);
+            line.setAttribute('y1', sqY);
             line.setAttribute('x2', tOutputX - 26);
-            line.setAttribute('y2', yCenter);
+            line.setAttribute('y2', cY);
             line.setAttribute('stroke','#9333ea');
             line.setAttribute('stroke-width','2');
             line.setAttribute('marker-end','url(#inputGateArrowHead)');
             tanhSvg.appendChild(line);
-            const c = document.createElementNS(svgNS,'circle');
-            c.setAttribute('cx', tOutputX);
-            c.setAttribute('cy', yCenter);
-            c.setAttribute('r', 24);
-            c.classList.add('input-output-circle');
-            tanhSvg.appendChild(c);
-            requestAnimationFrame(()=> c.classList.add('visible'));
+          });
         });
+        tCircleCenters.forEach(cY => {
+          const c = document.createElementNS(svgNS,'circle');
+          c.setAttribute('cx', tOutputX);
+          c.setAttribute('cy', cY);
+          c.setAttribute('r', 24);
+          c.classList.add('input-output-circle');
+          tanhSvg.appendChild(c);
+          requestAnimationFrame(()=> c.classList.add('visible'));
+        });
+        // Dynamic inline WC (candidate weights) label for tanh panel
+        const tSquareCenterX = tCenterX + tSize/2;
+        const tWeightMidX = (tSquareCenterX + tOutputX)/2;
+        const weightLabelWc = document.createElementNS(svgNS,'text');
+        // Build 'WC' with subscript C
+        weightLabelWc.textContent='';
+        const baseWc = document.createTextNode('W');
+        const subC = document.createElementNS(svgNS,'tspan');
+        subC.textContent='C';
+        subC.classList.add('subscript');
+        weightLabelWc.appendChild(baseWc);
+        weightLabelWc.appendChild(subC);
+        const dimsTextC = document.createTextNode(` (${tRows.length}×${tRows.length})`);
+        weightLabelWc.appendChild(dimsTextC);
+        const tTopConnY = tRows[0] + tSize/2 - tSize/2 - 18;
+        weightLabelWc.setAttribute('x', tWeightMidX);
+        weightLabelWc.setAttribute('y', tTopConnY < 18 ? 18 : tTopConnY);
+        weightLabelWc.setAttribute('text-anchor','middle');
+        weightLabelWc.classList.add('inline-matrix-label');
+        tanhSvg.appendChild(weightLabelWc);
+        requestAnimationFrame(()=> weightLabelWc.classList.add('visible'));
       }
       inputGateAnimated = true;
       inputGateTimeoutId = null;
@@ -663,25 +748,52 @@
       if(outputGatePanel2Layout){
         const { svg: svg2, size: size2, centerX: centerX2, rows: rows2 } = outputGatePanel2Layout;
         const circleColX2 = centerX2 + size2 + 140;
-        rows2.forEach((rowY)=>{
-          const yCenter = rowY + size2/2;
-          const line = document.createElementNS(svgNS,'line');
-          line.setAttribute('x1', centerX2 + size2);
-          line.setAttribute('y1', yCenter);
+        // Fully connected: each square to each circle
+        const squareCenters2 = rows2.map(r => r + size2/2);
+        const circleCenters2 = squareCenters2.slice();
+        squareCenters2.forEach(sqY => {
+          circleCenters2.forEach(cY => {
+            const line = document.createElementNS(svgNS,'line');
+            line.setAttribute('x1', centerX2 + size2);
+            line.setAttribute('y1', sqY);
             line.setAttribute('x2', circleColX2 - 26);
-          line.setAttribute('y2', yCenter);
-          line.setAttribute('stroke','#9333ea');
-          line.setAttribute('stroke-width','2');
-          line.setAttribute('marker-end','url(#inputGateArrowHead)');
-          svg2.appendChild(line);
+            line.setAttribute('y2', cY);
+            line.setAttribute('stroke','#9333ea');
+            line.setAttribute('stroke-width','2');
+            line.setAttribute('marker-end','url(#inputGateArrowHead)');
+            svg2.appendChild(line);
+          });
+        });
+        // Circles on top
+        circleCenters2.forEach(cY => {
           const circle = document.createElementNS(svgNS,'circle');
           circle.setAttribute('cx', circleColX2);
-          circle.setAttribute('cy', yCenter);
+          circle.setAttribute('cy', cY);
           circle.setAttribute('r', 24);
           circle.classList.add('output-gate-circle');
           svg2.appendChild(circle);
           requestAnimationFrame(()=> circle.classList.add('visible'));
         });
+        // Dynamic Wo label (output gate weights) centered between squares and circles
+        const squareCenterX2 = centerX2 + size2/2;
+        const weightMidX2 = (squareCenterX2 + circleColX2)/2;
+        const labelWo = document.createElementNS(svgNS,'text');
+        labelWo.textContent='';
+        const baseWo = document.createTextNode('W');
+        const subO = document.createElementNS(svgNS,'tspan');
+        subO.textContent='o';
+        subO.classList.add('subscript');
+        labelWo.appendChild(baseWo);
+        labelWo.appendChild(subO);
+        const dimsWo = document.createTextNode(` (${rows2.length}×${rows2.length})`);
+        labelWo.appendChild(dimsWo);
+        const topConnY2 = rows2[0] + size2/2 - size2/2 - 18;
+        labelWo.setAttribute('x', weightMidX2);
+        labelWo.setAttribute('y', topConnY2 < 18 ? 18 : topConnY2);
+        labelWo.setAttribute('text-anchor','middle');
+        labelWo.classList.add('inline-matrix-label');
+        svg2.appendChild(labelWo);
+        requestAnimationFrame(()=> labelWo.classList.add('visible'));
       }
       outputGateAnimated = true;
       outputGateTimeoutId = null;
