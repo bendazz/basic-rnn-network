@@ -86,5 +86,14 @@ footer { opacity:.6; text-align:center; }
 .combined-op.visible { opacity:1; transition: opacity .4s ease; }
 .triangle-label { fill:#ec4899; font-size:12px; font-weight:600; text-anchor:middle; dominant-baseline:middle; opacity:0; }
 .triangle-label.visible { opacity:1; transition: opacity .4s ease .15s; }
+/* Output Gate triangle tanh flash */
+@keyframes output-triangle-flash-red {
+  0% { fill:none; }
+  30% { fill:#ef4444; }
+  100% { fill:none; }
+}
+.forget-c-triangle.output-tanh-flash { animation: output-triangle-flash-red 700ms ease-in-out; }
+.output-gate-circle { fill:#1e1b4b; stroke:#9333ea; stroke-width:2; opacity:0; }
+.output-gate-circle.visible { opacity:1; transition: opacity .5s ease; }
 /* Input Gate second panel tanh flash (red) */
 .square-node.input-tanh-flash { animation: rnn-flash-red 700ms ease-in-out; }

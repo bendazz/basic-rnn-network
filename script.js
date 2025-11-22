@@ -40,6 +40,17 @@
   let inputGateTimeoutId = null;
   let inputGateOverlay = null;
   let inputGateCombinedAnimated = false;
+  // Output Gate elements
+  const outputGateHiddenSlider = document.getElementById('outputGateHiddenSize');
+  const outputGateHiddenValue = document.getElementById('outputGateHiddenValue');
+  const outputGatePanel1 = document.getElementById('output-gate-panel-1');
+  const outputGatePanel2 = document.getElementById('output-gate-panel-2');
+  const outputGateAnimateBtn = document.getElementById('outputGateAnimateBtn');
+  const outputGateResetBtn = document.getElementById('outputGateResetBtn');
+  let outputGateLayout = null;
+  let outputGatePanel2Layout = null;
+  let outputGateAnimated = false;
+  let outputGateTimeoutId = null;
 
   // Overlay SVG for animation clones
   let overlaySvgHidden = null;
@@ -201,6 +212,64 @@
     defs.appendChild(marker);
     svg.appendChild(defs);
     return { svg, size, centerX, rows: Array.from({length:count}, (_,i)=>rowY(i)), squares };
+  }
+
+  function buildOutputGateTriangleVector(container, count){
+    if(!container) return;
+    container.innerHTML='';
+    const svg = document.createElementNS(svgNS,'svg');
+    svg.setAttribute('viewBox', `0 0 ${dims.w} ${dims.h}`);
+    container.appendChild(svg);
+    const size = 40; // vertical spacing reference (matching square size)
+    const centerX = dims.w/2; // triangles centered horizontally
+    const rowY = (i) => count === 1 ? (dims.h/2) : (padding + i * ((dims.h - 2*padding)/(count - 1)));
+    const minY = rowY(0);
+    const maxY = rowY(count - 1);
+    const midY = (minY + maxY) / 2;
+    const label = document.createElementNS(svgNS,'text');
+    label.textContent = 'base \u2192';
+    label.setAttribute('x', centerX - 60);
+    label.setAttribute('y', midY + 6);
+    label.setAttribute('text-anchor','end');
+    label.classList.add('rnn-label');
+    svg.appendChild(label);
+    const triangles = [];
+    for(let i=0;i<count;i++){
+      const yCenter = rowY(i);
+      const topY = yCenter - 22;
+      const blX = centerX - 22, blY = yCenter + 22;
+      const brX = centerX + 22, brY = yCenter + 22;
+      const tri = document.createElementNS(svgNS,'polygon');
+      tri.setAttribute('points', `${centerX},${topY} ${blX},${blY} ${brX},${brY}`);
+      tri.classList.add('forget-c-triangle');
+      svg.appendChild(tri);
+      const tLabel = document.createElementNS(svgNS,'text');
+      tLabel.textContent = `C'${i+1}`;
+      tLabel.setAttribute('x', centerX);
+      tLabel.setAttribute('y', yCenter + 6);
+      tLabel.setAttribute('text-anchor','middle');
+      tLabel.classList.add('triangle-label');
+      svg.appendChild(tLabel);
+      requestAnimationFrame(()=> { tri.classList.add('visible'); tLabel.classList.add('visible'); });
+      triangles.push(tri);
+    }
+    // Arrowhead marker for output gate arrows
+    const defs = document.createElementNS(svgNS,'defs');
+    const marker = document.createElementNS(svgNS,'marker');
+    marker.setAttribute('id','outputGateArrowHead');
+    marker.setAttribute('viewBox','0 0 10 10');
+    marker.setAttribute('refX','10');
+    marker.setAttribute('refY','5');
+    marker.setAttribute('markerWidth','6');
+    marker.setAttribute('markerHeight','6');
+    marker.setAttribute('orient','auto-start-reverse');
+    const markerPath = document.createElementNS(svgNS,'path');
+    markerPath.setAttribute('d','M 0 0 L 10 5 L 0 10 z');
+    markerPath.setAttribute('fill','#9333ea');
+    marker.appendChild(markerPath);
+    defs.appendChild(marker);
+    svg.appendChild(defs);
+    return { svg, centerX, rows: Array.from({length:count}, (_,i)=>rowY(i)), triangles };
   }
 
   function buildLayer(container, inputCount, outputCount, opts){
@@ -435,7 +504,7 @@
         const label = document.createElementNS(svgNS,'text');
         label.textContent = `C${rows.indexOf(ry)+1}`;
         label.setAttribute('x', cColX);
-        label.setAttribute('y', yCenter + 2);
+        label.setAttribute('y', yCenter + 6);
         label.setAttribute('text-anchor','middle');
         label.classList.add('triangle-label');
         svg.appendChild(label);
@@ -469,6 +538,23 @@
     inputGateAnimated = false;
     inputGateCombinedAnimated = false;
   }
+
+  function rebuildOutputGate(){
+    if(!outputGateHiddenSlider || !outputGateHiddenValue || !outputGatePanel1) return;
+    if(outputGateTimeoutId){ clearTimeout(outputGateTimeoutId); outputGateTimeoutId = null; }
+    const n = parseInt(outputGateHiddenSlider.value,10);
+    outputGateHiddenValue.textContent = n;
+    outputGateLayout = buildOutputGateTriangleVector(outputGatePanel1, n);
+    // Build second panel identical to input gate first panel (squares)
+    if(outputGatePanel2){
+      outputGatePanel2Layout = buildInputGateVector(outputGatePanel2, n);
+    }
+    outputGateAnimated = false;
+  }
+  if(outputGateHiddenSlider){
+    outputGateHiddenSlider.addEventListener('input', rebuildOutputGate);
+    rebuildOutputGate();
+  }
   if(inputGateHiddenSlider){
     inputGateHiddenSlider.addEventListener('input', rebuildInputGate);
     rebuildInputGate();
@@ -479,8 +565,9 @@
     const { svg, size, centerX, rows, squares } = inputGateLayout;
     squares.forEach(sq => { sq.classList.remove('input-flash'); void sq.offsetWidth; sq.classList.add('input-flash'); });
     if(inputGateTanhLayout){
-      const { squares: tanhSquares } = inputGateTanhLayout;
-      tanhSquares.forEach(sq => { sq.classList.remove('input-tanh-flash'); void sq.offsetWidth; sq.classList.add('input-tanh-flash'); });
+      // Make second panel identical: use same flash class as first panel
+      const { squares: panel2Squares } = inputGateTanhLayout;
+      panel2Squares.forEach(sq => { sq.classList.remove('input-flash'); void sq.offsetWidth; sq.classList.add('input-flash'); });
     }
     const delay = 700;
     inputGateTimeoutId = setTimeout(()=>{
@@ -533,6 +620,74 @@
       runInputGateCombined();
     }, delay);
   }
+
+  function animateOutputGate(){
+    if(!outputGateLayout || outputGateAnimated) return;
+    const { svg, centerX, rows, triangles } = outputGateLayout;
+    // Flash squares in second panel if present to mimic input gate first panel
+    if(outputGatePanel2Layout){
+      outputGatePanel2Layout.squares.forEach(sq => { sq.classList.remove('input-flash'); void sq.offsetWidth; sq.classList.add('input-flash'); });
+    }
+    // Flash triangles red (tanh) then produce purple circles in second panel
+    triangles.forEach(tri => { tri.classList.remove('output-tanh-flash'); void tri.offsetWidth; tri.classList.add('output-tanh-flash'); });
+    const delay = 700;
+    outputGateTimeoutId = setTimeout(()=>{
+      // Build circles in SAME panel, positioned to the right of triangles
+      const circleColX = centerX + 140;
+      rows.forEach((yCenter)=>{
+        // Arrow from triangle apex horizontally to circle
+        const line = document.createElementNS(svgNS,'line');
+        line.setAttribute('x1', centerX + 5);
+        line.setAttribute('y1', yCenter);
+        line.setAttribute('x2', circleColX - 26);
+        line.setAttribute('y2', yCenter);
+        line.setAttribute('stroke','#9333ea');
+        line.setAttribute('stroke-width','2');
+        line.setAttribute('marker-end','url(#outputGateArrowHead)');
+        svg.appendChild(line);
+        const circle = document.createElementNS(svgNS,'circle');
+        circle.setAttribute('cx', circleColX);
+        circle.setAttribute('cy', yCenter);
+        circle.setAttribute('r', 24);
+        circle.classList.add('output-gate-circle');
+        svg.appendChild(circle);
+        requestAnimationFrame(()=> circle.classList.add('visible'));
+      });
+      // Build arrows and circles for second panel squares if present
+      if(outputGatePanel2Layout){
+        const { svg: svg2, size: size2, centerX: centerX2, rows: rows2 } = outputGatePanel2Layout;
+        const circleColX2 = centerX2 + size2 + 140;
+        rows2.forEach((rowY)=>{
+          const yCenter = rowY + size2/2;
+          const line = document.createElementNS(svgNS,'line');
+          line.setAttribute('x1', centerX2 + size2);
+          line.setAttribute('y1', yCenter);
+            line.setAttribute('x2', circleColX2 - 26);
+          line.setAttribute('y2', yCenter);
+          line.setAttribute('stroke','#9333ea');
+          line.setAttribute('stroke-width','2');
+          line.setAttribute('marker-end','url(#inputGateArrowHead)');
+          svg2.appendChild(line);
+          const circle = document.createElementNS(svgNS,'circle');
+          circle.setAttribute('cx', circleColX2);
+          circle.setAttribute('cy', yCenter);
+          circle.setAttribute('r', 24);
+          circle.classList.add('output-gate-circle');
+          svg2.appendChild(circle);
+          requestAnimationFrame(()=> circle.classList.add('visible'));
+        });
+      }
+      outputGateAnimated = true;
+      outputGateTimeoutId = null;
+    }, delay);
+  }
+  function resetOutputGate(){
+    if(outputGateTimeoutId){ clearTimeout(outputGateTimeoutId); outputGateTimeoutId = null; }
+    outputGateAnimated = false;
+    rebuildOutputGate();
+  }
+  if(outputGateAnimateBtn){ outputGateAnimateBtn.addEventListener('click', animateOutputGate); }
+  if(outputGateResetBtn){ outputGateResetBtn.addEventListener('click', resetOutputGate); }
   function resetInputGate(){
     if(inputGateTimeoutId){ clearTimeout(inputGateTimeoutId); inputGateTimeoutId = null; }
     inputGateAnimated = false;
@@ -680,7 +835,7 @@
         const label = document.createElementNS(svgNS,'text');
         label.textContent = `C'${i+1}`;
         label.setAttribute('x', col4X);
-        label.setAttribute('y', y + 2); // slight adjust for vertical centering
+        label.setAttribute('y', y + 6); // moved further down to avoid triangle sides overlap
         label.classList.add('triangle-label');
         inputGateOverlay.appendChild(label);
         requestAnimationFrame(()=> { tri.classList.add('visible'); label.classList.add('visible'); });

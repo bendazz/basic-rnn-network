@@ -103,6 +103,30 @@
       </section>
     </div>
   </section>
+  <hr class="section-divider" />
+  <section class="content-section">
+    <h2>Output Gate</h2>
+    <div class="global-controls">
+      <div class="size-control">
+        <label for="outputGateHiddenSize">Hidden Size: <span id="outputGateHiddenValue">3</span></label>
+        <input type="range" id="outputGateHiddenSize" min="1" max="5" value="3" />
+      </div>
+      <div class="animation-controls">
+        <button id="outputGateAnimateBtn" type="button">Animate</button>
+        <button id="outputGateResetBtn" type="button">Reset</button>
+      </div>
+    </div>
+    <div class="panels-row">
+      <div class="left-stack">
+        <section class="panel">
+          <div id="output-gate-panel-1" class="network-box" aria-label="Output gate cell state (triangles)"></div>
+        </section>
+        <section class="panel">
+          <div id="output-gate-panel-2" class="network-box" aria-label="Output gate comparison (squares)"></div>
+        </section>
+      </div>
+    </div>
+  </section>
   <script src="script.js"></script>
 </body>
 </html>
