@@ -61,6 +61,9 @@
   const lstmCompositeContainer = document.getElementById('lstm-composite-container');
   let lstmCompositeLayout = null;
   let lstmCompositeFlowState = { phase: 0, running: false, dots: [] };
+  function lstmAutoSpeedFactor(){
+    return lstmCompositeFlowState.autoRun ? 0.5 : 1; // 50% duration when auto-running
+  }
 
   // Overlay SVG for animation clones
   let overlaySvgHidden = null;
@@ -1603,7 +1606,7 @@
     const meetX = feedX; const meetY = bottomY;
     const orangeStartX = incomingStartX; const orangeEndX = meetX;
     const greenStartY = bottomY + 110; const greenEndY = meetY;
-    const duration = 1600;
+    const duration = 1600 * lstmAutoSpeedFactor();
     const startTs = performance.now();
     lstmCompositeFlowState.running = true; lstmCompositeFlowState.phase = 1;
     // Clear any existing dots from previous runs
@@ -1652,7 +1655,7 @@
     const thirdBaseX = verticalXs[2];
     const fourthBaseX = verticalXs[3];
 
-    const segmentDuration = 1000; // ms per movement segment
+    const segmentDuration = 1000 * lstmAutoSpeedFactor(); // ms per movement segment (scaled)
     lstmCompositeFlowState.running = true;
 
     // Segment 1: purple moves horizontally to first vertical base.
@@ -1752,7 +1755,7 @@
     const startPurpleY = bottomY;
     const redStartX = incomingStartX;
     const redEndX = firstVerticalX;
-    const duration = 1400; // ms
+    const duration = 1400 * lstmAutoSpeedFactor(); // ms (scaled)
     const startTs = performance.now();
     lstmCompositeFlowState.running = true;
     // Create incoming red dot
@@ -1813,7 +1816,7 @@
     });
     if(!greenSecondBase || !greenThirdBase) return;
     lstmCompositeFlowState.running = true;
-    const duration = 1300;
+    const duration = 1300 * lstmAutoSpeedFactor();
     const startTs = performance.now();
     function frame(ts){
       const t = Math.min(1,(ts - startTs)/duration);
@@ -1874,7 +1877,7 @@
     if(!purpleDot || !redDot) return; // ensure required dots
     const startPurpleY = parseFloat(purpleDot.getAttribute('cy'));
     const startRedX = parseFloat(redDot.getAttribute('cx'));
-    const duration = 1400;
+    const duration = 1400 * lstmAutoSpeedFactor();
     const startTs = performance.now();
     lstmCompositeFlowState.running = true;
     function frame(ts){
@@ -1925,7 +1928,7 @@
     const redTop = lstmCompositeFlowState.dots.find(d=>d.classList.contains('anim-dot-red'));
     if(!greenDot || !redTop) return;
     lstmCompositeFlowState.running = true;
-    const duration = 1800; // total time
+    const duration = 1800 * lstmAutoSpeedFactor(); // total time (scaled)
     const spawnProgress = 0.5; // point when red reaches connectorX and spawn occurs
     const startTs = performance.now();
     let spawnedDescendingRed = false;
@@ -2007,7 +2010,7 @@
     const startBlueY = parseFloat(orangeMid.getAttribute('cy'));
     const midY4 = startBlueY; // current mid height
     const verticalFrac = 0.3; // fraction of duration for vertical descent
-    const duration = 1600;
+    const duration = 1600 * lstmAutoSpeedFactor();
     const startTs = performance.now();
     lstmCompositeFlowState.running = true;
     function frame(ts){
