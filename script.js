@@ -55,10 +55,12 @@
   let outputGateOverlay = null;
   let outputGateCombinedAnimated = false;
   // LSTM Composite elements
-  const lstmHiddenSlider = document.getElementById('lstmHiddenSize');
-  const lstmHiddenValue = document.getElementById('lstmHiddenValue');
+  const lstmCompositeAnimateBtn = document.getElementById('lstmCompositeAnimateBtn');
+  const lstmCompositeAnimateAllBtn = document.getElementById('lstmCompositeAnimateAllBtn');
+  const lstmCompositeResetBtn = document.getElementById('lstmCompositeResetBtn');
   const lstmCompositeContainer = document.getElementById('lstm-composite-container');
   let lstmCompositeLayout = null;
+  let lstmCompositeFlowState = { phase: 0, running: false, dots: [] };
 
   // Overlay SVG for animation clones
   let overlaySvgHidden = null;
@@ -1572,19 +1574,514 @@
     bottomOutLabel.classList.add('lstm-label');
     bottomOutLabel.setAttribute('text-anchor','start');
     svg.appendChild(bottomOutLabel);
-    return { svg };
+    return { svg, panelX, panelY, panelW, panelH, topY, bottomY, incomingStartX, incomingEndX, feedX, verticalXs: svg._verticalXs || [], bottomSecondStart };
   }
 
   function rebuildLstmComposite(){
-    if(!lstmHiddenSlider || !lstmCompositeContainer) return;
-    const n = parseInt(lstmHiddenSlider.value,10); // currently unused in step1
-    lstmHiddenValue.textContent = n;
+    if(!lstmCompositeContainer) return;
     lstmCompositeLayout = buildLstmComposite(lstmCompositeContainer);
+    lstmCompositeFlowState.phase = 0; lstmCompositeFlowState.running = false;
+    lstmCompositeFlowState.autoRun = false;
+    const btn = document.getElementById('lstmCompositeAnimateBtn');
+    if(btn) btn.textContent = 'Step';
   }
-  if(lstmHiddenSlider){
-    lstmHiddenSlider.addEventListener('input', rebuildLstmComposite);
-    rebuildLstmComposite();
+  rebuildLstmComposite();
+
+  function createDot(x,y, cls){
+    const { svg } = lstmCompositeLayout || {}; if(!svg) return null;
+    const c = document.createElementNS(svgNS,'circle');
+    c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 10);
+    c.classList.add('anim-flow-dot', cls);
+    svg.appendChild(c); return c;
   }
+
+  function animateLstmCompositeStep1(){
+    if(!lstmCompositeLayout || lstmCompositeFlowState.running) return;
+    const { svg, incomingStartX, bottomY, feedX } = lstmCompositeLayout;
+    // Step1 refactor: ONLY animate orange and green merging into a single purple dot, then pause.
+    // No red dot movement or creation yet.
+    const meetX = feedX; const meetY = bottomY;
+    const orangeStartX = incomingStartX; const orangeEndX = meetX;
+    const greenStartY = bottomY + 110; const greenEndY = meetY;
+    const duration = 1600;
+    const startTs = performance.now();
+    lstmCompositeFlowState.running = true; lstmCompositeFlowState.phase = 1;
+    // Clear any existing dots from previous runs
+    lstmCompositeFlowState.dots.forEach(d=>d.remove());
+    lstmCompositeFlowState.dots = [];
+    // Create orange & green
+    const orangeDot = createDot(orangeStartX, bottomY, 'anim-dot-orange');
+    const greenDot = createDot(feedX, greenStartY, 'anim-dot-green');
+    lstmCompositeFlowState.dots.push(orangeDot, greenDot);
+    function frame(ts){
+      const t = Math.min(1,(ts - startTs)/duration);
+      const ease = t*t*(3 - 2*t); // smoothstep
+      const orangeX = orangeStartX + (orangeEndX - orangeStartX)*ease;
+      orangeDot.setAttribute('cx', orangeX);
+      const greenY = greenStartY + (greenEndY - greenStartY)*ease;
+      greenDot.setAttribute('cy', greenY);
+      if(t < 1){ requestAnimationFrame(frame); } else { finalizeStep1(); }
+    }
+    requestAnimationFrame(frame);
+    function finalizeStep1(){
+      // Replace both with a single purple dot at merge point
+      orangeDot.remove(); greenDot.remove();
+      const purpleDot = createDot(meetX, meetY, 'anim-dot-purple');
+      lstmCompositeFlowState.dots = [purpleDot];
+      // Pause: mark not running so next step can be triggered manually
+      lstmCompositeFlowState.running = false;
+      lstmCompositeFlowState.phase = 1; // still phase1 complete
+      const btn = document.getElementById('lstmCompositeAnimateBtn');
+      if(btn) btn.textContent = 'Step';
+      if(lstmCompositeFlowState.autoRun){ animateLstmCompositeStep2(); }
+    }
+  }
+
+  // Step2: purple (result of merge) moves to base of first vertical arrow, stops; spawns green moving to base of second vertical arrow; stops; spawns another green moving to base of third vertical arrow; stops.
+  function animateLstmCompositeStep2(){
+    if(!lstmCompositeLayout) return;
+    // Require completion of step1: phase==1 and exactly one purple dot present.
+    if(lstmCompositeFlowState.running) return;
+    if(lstmCompositeFlowState.phase !== 1) return;
+    const purpleDot = lstmCompositeFlowState.dots.find(d=>d.classList.contains('anim-dot-purple'));
+    if(!purpleDot) return; // nothing to propagate
+    const { bottomY, verticalXs } = lstmCompositeLayout;
+    if(!verticalXs || verticalXs.length < 4) return;
+    const firstBaseX = verticalXs[0];
+    const secondBaseX = verticalXs[1];
+    const thirdBaseX = verticalXs[2];
+    const fourthBaseX = verticalXs[3];
+
+    const segmentDuration = 1000; // ms per movement segment
+    lstmCompositeFlowState.running = true;
+
+    // Segment 1: purple moves horizontally to first vertical base.
+    const startPurpleX = parseFloat(purpleDot.getAttribute('cx'));
+    function movePurple(tsStart){
+      function frame(ts){
+        const t = Math.min(1,(ts - tsStart)/segmentDuration);
+        const ease = t*t*(3 - 2*t);
+        const nx = startPurpleX + (firstBaseX - startPurpleX)*ease;
+        purpleDot.setAttribute('cx', nx);
+        purpleDot.setAttribute('cy', bottomY);
+        if(t < 1){ requestAnimationFrame(frame); } else { spawnFirstGreen(); }
+      }
+      requestAnimationFrame(frame);
+    }
+
+    function spawnFirstGreen(){
+      // Spawn green at firstBaseX bottomY and move to secondBaseX
+      const green1 = createDot(firstBaseX, bottomY, 'anim-dot-green');
+      lstmCompositeFlowState.dots.push(green1);
+      const startX = firstBaseX;
+      function frame(tsStart){
+        function seg(ts){
+          const t = Math.min(1,(ts - tsStart)/segmentDuration);
+          const ease = t*t*(3 - 2*t);
+          const nx = startX + (secondBaseX - startX)*ease;
+          green1.setAttribute('cx', nx);
+          if(t < 1){ requestAnimationFrame(seg); } else { spawnSecondGreen(green1); }
+        }
+        requestAnimationFrame(seg);
+      }
+      frame(performance.now());
+    }
+
+    function spawnSecondGreen(green1){
+      // Spawn second green at secondBaseX, move to thirdBaseX then spawn third
+      const green2 = createDot(secondBaseX, bottomY, 'anim-dot-green');
+      lstmCompositeFlowState.dots.push(green2);
+      const startX = secondBaseX;
+      function frame(tsStart){
+        function seg(ts){
+          const t = Math.min(1,(ts - tsStart)/segmentDuration);
+          const ease = t*t*(3 - 2*t);
+          const nx = startX + (thirdBaseX - startX)*ease;
+          green2.setAttribute('cx', nx);
+          if(t < 1){ requestAnimationFrame(seg); } else { spawnThirdGreen(green1, green2); }
+        }
+        requestAnimationFrame(seg);
+      }
+      frame(performance.now());
+    }
+
+    function spawnThirdGreen(green1, green2){
+      const green3 = createDot(thirdBaseX, bottomY, 'anim-dot-green');
+      lstmCompositeFlowState.dots.push(green3);
+      const startX = thirdBaseX;
+      function frame(tsStart){
+        function seg(ts){
+          const t = Math.min(1,(ts - tsStart)/segmentDuration);
+          const ease = t*t*(3 - 2*t);
+          const nx = startX + (fourthBaseX - startX)*ease;
+          green3.setAttribute('cx', nx);
+          if(t < 1){ requestAnimationFrame(seg); } else { finalizeStep2(green1, green2, green3); }
+        }
+        requestAnimationFrame(seg);
+      }
+      frame(performance.now());
+    }
+
+    function finalizeStep2(green1, green2, green3){
+      // End state: purple firstBaseX, greens at second, third, fourth bases.
+      purpleDot.setAttribute('cx', firstBaseX); purpleDot.setAttribute('cy', bottomY);
+      green1.setAttribute('cx', secondBaseX); green1.setAttribute('cy', bottomY);
+      green2.setAttribute('cx', thirdBaseX); green2.setAttribute('cy', bottomY);
+      green3.setAttribute('cx', fourthBaseX); green3.setAttribute('cy', bottomY);
+      lstmCompositeFlowState.phase = 2;
+      lstmCompositeFlowState.running = false;
+      const btn = document.getElementById('lstmCompositeAnimateBtn');
+      if(btn) btn.textContent = 'Step';
+      if(lstmCompositeFlowState.autoRun){ animateLstmCompositeStep3(); }
+    }
+
+    movePurple(performance.now());
+  }
+
+  // Step3: vertical merge. Purple (at first vertical base) ascends; simultaneously a red dot enters from top left input along top horizontal into the first vertical intersection. On meeting, purple removed; merged dot stays red.
+  function animateLstmCompositeStep3(){
+    if(!lstmCompositeLayout) return;
+    if(lstmCompositeFlowState.running) return;
+    if(lstmCompositeFlowState.phase !== 2) return; // require completion of step2
+    const { incomingStartX, topY, bottomY, verticalXs } = lstmCompositeLayout;
+    if(!verticalXs || verticalXs.length === 0) return;
+    const firstVerticalX = verticalXs[0];
+    // Find purple at base
+    const purpleDot = lstmCompositeFlowState.dots.find(d=>d.classList.contains('anim-dot-purple'));
+    if(!purpleDot) return; // safety
+    const startPurpleY = bottomY;
+    const redStartX = incomingStartX;
+    const redEndX = firstVerticalX;
+    const duration = 1400; // ms
+    const startTs = performance.now();
+    lstmCompositeFlowState.running = true;
+    // Create incoming red dot
+    const redDot = createDot(redStartX, topY, 'anim-dot-red');
+    lstmCompositeFlowState.dots.push(redDot);
+
+    function frame(ts){
+      const t = Math.min(1,(ts - startTs)/duration);
+      // Use smoothstep easing
+      const ease = t*t*(3 - 2*t);
+      // Purple vertical ascent
+      const pY = startPurpleY + (topY - startPurpleY)*ease;
+      purpleDot.setAttribute('cx', firstVerticalX);
+      purpleDot.setAttribute('cy', pY);
+      // Red horizontal travel
+      const rX = redStartX + (redEndX - redStartX)*ease;
+      redDot.setAttribute('cx', rX);
+      redDot.setAttribute('cy', topY);
+      if(t < 1){
+        requestAnimationFrame(frame);
+      } else {
+        finalizeStep3(redDot, purpleDot);
+      }
+    }
+    requestAnimationFrame(frame);
+
+    function finalizeStep3(redDot, purpleDot){
+      // Ensure both at intersection; remove purple and keep red.
+      purpleDot.remove();
+      lstmCompositeFlowState.dots = lstmCompositeFlowState.dots.filter(d=>d!==purpleDot);
+      redDot.setAttribute('cx', firstVerticalX);
+      redDot.setAttribute('cy', topY);
+      lstmCompositeFlowState.phase = 3;
+      lstmCompositeFlowState.running = false;
+      const btn = document.getElementById('lstmCompositeAnimateBtn');
+      if(btn) btn.textContent = 'Step';
+      if(lstmCompositeFlowState.autoRun){ animateLstmCompositeStep4(); }
+    }
+  }
+
+  // Step4: first green (at second base) moves up then across bent second arrow path to intersection midY; second green (at third base) moves straight up third vertical to same midY; they merge into a purple dot.
+  function animateLstmCompositeStep4(){
+    if(!lstmCompositeLayout) return;
+    if(lstmCompositeFlowState.running) return;
+    if(lstmCompositeFlowState.phase !== 3) return; // after step3 merge
+    const { bottomY, topY, verticalXs } = lstmCompositeLayout;
+    if(!verticalXs || verticalXs.length < 3) return;
+    const secondX = verticalXs[1];
+    const thirdX = verticalXs[2];
+    const midY = (bottomY + topY)/2; // intersection height used earlier for bent path
+    // Identify two green dots by their x positions (closest to secondX & thirdX) and y==bottomY
+    const greens = lstmCompositeFlowState.dots.filter(d=>d.classList.contains('anim-dot-green'));
+    if(greens.length < 2) return;
+    let greenSecondBase = null, greenThirdBase = null;
+    greens.forEach(g=>{
+      const gx = parseFloat(g.getAttribute('cx'));
+      if(Math.abs(gx - secondX) < 2) greenSecondBase = g; else if(Math.abs(gx - thirdX) < 2) greenThirdBase = g;
+    });
+    if(!greenSecondBase || !greenThirdBase) return;
+    lstmCompositeFlowState.running = true;
+    const duration = 1300;
+    const startTs = performance.now();
+    function frame(ts){
+      const t = Math.min(1,(ts - startTs)/duration);
+      const ease = t*t*(3 - 2*t);
+      // Green1 path: vertical to midY (first half), then horizontal to thirdX (second half)
+      let g1x, g1y;
+      if(ease < 0.5){
+        const p = ease/0.5;
+        g1x = secondX;
+        g1y = bottomY + (midY - bottomY)*p;
+      } else {
+        const p = (ease - 0.5)/0.5;
+        g1x = secondX + (thirdX - secondX)*p;
+        g1y = midY;
+      }
+      greenSecondBase.setAttribute('cx', g1x);
+      greenSecondBase.setAttribute('cy', g1y);
+      // Green2 path: vertical straight to midY over full ease
+      const g2y = bottomY + (midY - bottomY)*ease;
+      greenThirdBase.setAttribute('cx', thirdX);
+      greenThirdBase.setAttribute('cy', g2y);
+      if(t < 1){
+        requestAnimationFrame(frame);
+      } else {
+        finalizeStep4(greenSecondBase, greenThirdBase);
+      }
+    }
+    requestAnimationFrame(frame);
+    function finalizeStep4(g1, g2){
+      // Place both at intersection then merge into purple
+      g1.setAttribute('cx', thirdX); g1.setAttribute('cy', midY);
+      g2.setAttribute('cx', thirdX); g2.setAttribute('cy', midY);
+      // Remove both and add purple
+      g1.remove(); g2.remove();
+      lstmCompositeFlowState.dots = lstmCompositeFlowState.dots.filter(d=>d!==g1 && d!==g2);
+      const purple = createDot(thirdX, midY, 'anim-dot-purple');
+      lstmCompositeFlowState.dots.push(purple);
+      lstmCompositeFlowState.phase = 4;
+      lstmCompositeFlowState.running = false;
+      const btn = document.getElementById('lstmCompositeAnimateBtn');
+      if(btn) btn.textContent = 'Step';
+      if(lstmCompositeFlowState.autoRun){ animateLstmCompositeStep5(); }
+    }
+  }
+
+  // Step5: purple (at third vertical midY) moves upward to top line; simultaneously red (at first vertical top) moves horizontally right; on meeting they merge (remain red).
+  function animateLstmCompositeStep5(){
+    if(!lstmCompositeLayout) return;
+    if(lstmCompositeFlowState.running) return;
+    if(lstmCompositeFlowState.phase !== 4) return; // require completion of step4
+    const { topY, bottomY, verticalXs } = lstmCompositeLayout;
+    if(!verticalXs || verticalXs.length < 3) return;
+    const firstX = verticalXs[0];
+    const thirdX = verticalXs[2];
+    // Find purple at thirdX midY and red at firstX topY
+    const purpleDot = lstmCompositeFlowState.dots.find(d=>d.classList.contains('anim-dot-purple'));
+    const redDot = lstmCompositeFlowState.dots.find(d=>d.classList.contains('anim-dot-red'));
+    if(!purpleDot || !redDot) return; // ensure required dots
+    const startPurpleY = parseFloat(purpleDot.getAttribute('cy'));
+    const startRedX = parseFloat(redDot.getAttribute('cx'));
+    const duration = 1400;
+    const startTs = performance.now();
+    lstmCompositeFlowState.running = true;
+    function frame(ts){
+      const t = Math.min(1, (ts - startTs)/duration);
+      const ease = t*t*(3 - 2*t);
+      // Purple vertical ascent
+      const pY = startPurpleY + (topY - startPurpleY)*ease;
+      purpleDot.setAttribute('cx', thirdX);
+      purpleDot.setAttribute('cy', pY);
+      // Red horizontal move
+      const rX = startRedX + (thirdX - startRedX)*ease;
+      redDot.setAttribute('cx', rX);
+      redDot.setAttribute('cy', topY);
+      if(t < 1){
+        requestAnimationFrame(frame);
+      } else {
+        finalizeStep5(redDot, purpleDot);
+      }
+    }
+    requestAnimationFrame(frame);
+    function finalizeStep5(redDot, purpleDot){
+      // Merge: remove purple, keep red at final intersection
+      purpleDot.remove();
+      lstmCompositeFlowState.dots = lstmCompositeFlowState.dots.filter(d=>d!==purpleDot);
+      redDot.setAttribute('cx', thirdX);
+      redDot.setAttribute('cy', topY);
+      lstmCompositeFlowState.phase = 5;
+      lstmCompositeFlowState.running = false;
+      const btn = document.getElementById('lstmCompositeAnimateBtn');
+      if(btn) btn.textContent = 'Step';
+      if(lstmCompositeFlowState.autoRun){ animateLstmCompositeStep6(); }
+    }
+  }
+
+  // Step6: green at fourth base traverses bent fourth arrow to multiply circle; red at third vertical top moves right to connector then spawns a descending red; descending red and green merge into orange at multiply circle.
+  function animateLstmCompositeStep6(){
+    if(!lstmCompositeLayout) return;
+    if(lstmCompositeFlowState.running) return;
+    if(lstmCompositeFlowState.phase !== 5) return; // require completion of step5
+    const { topY, bottomY, verticalXs, bottomSecondStart } = lstmCompositeLayout;
+    if(!verticalXs || verticalXs.length < 4) return;
+    const fourthX = verticalXs[3];
+    const thirdX = verticalXs[2];
+    const connectorX = bottomSecondStart; // multiply circle center
+    const midY4 = (bottomY + topY)/2;
+    // Identify green at fourth base and red at third top
+    const greenDot = lstmCompositeFlowState.dots.find(d=>d.classList.contains('anim-dot-green') && Math.abs(parseFloat(d.getAttribute('cx')) - fourthX) < 2);
+    const redTop = lstmCompositeFlowState.dots.find(d=>d.classList.contains('anim-dot-red'));
+    if(!greenDot || !redTop) return;
+    lstmCompositeFlowState.running = true;
+    const duration = 1800; // total time
+    const spawnProgress = 0.5; // point when red reaches connectorX and spawn occurs
+    const startTs = performance.now();
+    let spawnedDescendingRed = false;
+    let redDownDot = null;
+    function frame(ts){
+      const t = Math.min(1, (ts - startTs)/duration);
+      const ease = t*t*(3 - 2*t);
+      // Green movement: same pattern (vertical then horizontal)
+      let gX, gY;
+      if(ease < 0.5){
+        const p = ease/0.5;
+        gX = fourthX;
+        gY = bottomY + (midY4 - bottomY)*p;
+      } else {
+        const p = (ease - 0.5)/0.5;
+        gX = fourthX + (connectorX - fourthX)*p;
+        gY = midY4;
+      }
+      greenDot.setAttribute('cx', gX); greenDot.setAttribute('cy', gY);
+      // Red horizontal movement capped at spawnProgress then stays.
+      const redEase = Math.min(ease / spawnProgress, 1);
+      const rX = thirdX + (connectorX - thirdX)*redEase;
+      redTop.setAttribute('cx', rX); redTop.setAttribute('cy', topY);
+      // Spawn descending red only once red has arrived (redEase==1)
+      if(!spawnedDescendingRed && redEase >= 1){
+        spawnedDescendingRed = true;
+        redDownDot = createDot(connectorX, topY, 'anim-dot-red');
+        lstmCompositeFlowState.dots.push(redDownDot);
+      }
+      // Descending red movement after spawn over remaining time (ease from spawnProgress to 1)
+      if(redDownDot){
+        const downPhase = (ease - spawnProgress) / (1 - spawnProgress); // 0..1 after spawn
+        const downClamped = Math.max(0, Math.min(1, downPhase));
+        const ddY = topY + (midY4 - topY)*downClamped;
+        redDownDot.setAttribute('cx', connectorX);
+        redDownDot.setAttribute('cy', ddY);
+      }
+      if(t < 1){
+        requestAnimationFrame(frame);
+      } else {
+        finalizeStep6(redTop, redDownDot, greenDot, connectorX, midY4);
+      }
+    }
+    requestAnimationFrame(frame);
+    function finalizeStep6(redTop, redDownDot, greenDot, cx, cy){
+      // Ensure final positions at multiply circle center for merging (descending red & green)
+      if(redDownDot){ redDownDot.setAttribute('cx', cx); redDownDot.setAttribute('cy', cy); }
+      greenDot.setAttribute('cx', cx); greenDot.setAttribute('cy', cy);
+      // Remove merging participants (green + descending red) and create orange result
+      if(redDownDot){
+        redDownDot.remove(); lstmCompositeFlowState.dots = lstmCompositeFlowState.dots.filter(d=>d!==redDownDot);
+      }
+      greenDot.remove(); lstmCompositeFlowState.dots = lstmCompositeFlowState.dots.filter(d=>d!==greenDot);
+      const orange = createDot(cx, cy, 'anim-dot-orange');
+      lstmCompositeFlowState.dots.push(orange);
+      // Keep original top red at connector top position (already moved right); ensure final horizontal position
+      redTop.setAttribute('cx', connectorX); redTop.setAttribute('cy', topY);
+      lstmCompositeFlowState.phase = 6; lstmCompositeFlowState.running = false;
+      const btn = document.getElementById('lstmCompositeAnimateBtn');
+      if(btn) btn.textContent = 'Step';
+      if(lstmCompositeFlowState.autoRun){ animateLstmCompositeStep7(); }
+    }
+  }
+
+  // Step7: propagate red (top) and blue (converted from orange at multiply circle) to outputs C' and h'.
+  function animateLstmCompositeStep7(){
+    if(!lstmCompositeLayout) return;
+    if(lstmCompositeFlowState.running) return;
+    if(lstmCompositeFlowState.phase !== 6) return; // after step6 merge
+    const { panelX, panelW, topY, bottomY, bottomSecondStart } = lstmCompositeLayout;
+    const outArrowLength = 120; // same length used when drawing output arrows
+    const outputEndX = panelX + panelW + outArrowLength; // final target X for both dots
+    // Identify current red (top) and orange (mid) dots
+    const redTop = lstmCompositeFlowState.dots.find(d=>d.classList.contains('anim-dot-red') && Math.abs(parseFloat(d.getAttribute('cy')) - topY) < 2);
+    const orangeMid = lstmCompositeFlowState.dots.find(d=>d.classList.contains('anim-dot-orange'));
+    if(!redTop || !orangeMid) return;
+    const startRedX = parseFloat(redTop.getAttribute('cx'));
+    const startBlueX = parseFloat(orangeMid.getAttribute('cx'));
+    const startBlueY = parseFloat(orangeMid.getAttribute('cy'));
+    const midY4 = startBlueY; // current mid height
+    const verticalFrac = 0.3; // fraction of duration for vertical descent
+    const duration = 1600;
+    const startTs = performance.now();
+    lstmCompositeFlowState.running = true;
+    function frame(ts){
+      const t = Math.min(1, (ts - startTs)/duration);
+      const ease = t*t*(3 - 2*t);
+      // Red purely horizontal
+      const redX = startRedX + (outputEndX - startRedX) * ease;
+      redTop.setAttribute('cx', redX);
+      redTop.setAttribute('cy', topY);
+      // Blue: vertical descent then horizontal travel along bottom line
+      let blueX, blueY;
+      if(ease < verticalFrac){
+        const p = ease/verticalFrac;
+        blueX = startBlueX; // stay in place horizontally during descent
+        blueY = midY4 + (bottomY - midY4)*p;
+      } else {
+        blueY = bottomY;
+        const hProgress = (ease - verticalFrac)/(1 - verticalFrac);
+        // Horizontal path begins at bottomSecondStart (connector) regardless of starting x
+        const beginX = bottomSecondStart;
+        blueX = beginX + (outputEndX - beginX)*hProgress;
+      }
+      orangeMid.setAttribute('cx', blueX);
+      orangeMid.setAttribute('cy', blueY);
+      if(t < 1){
+        requestAnimationFrame(frame);
+      } else {
+        finalizeStep7(redTop, orangeMid, outputEndX);
+      }
+    }
+    requestAnimationFrame(frame);
+    function finalizeStep7(redTop, orangeDot, endX){
+      redTop.setAttribute('cx', endX); redTop.setAttribute('cy', topY);
+      orangeDot.setAttribute('cx', endX); orangeDot.setAttribute('cy', bottomY);
+      lstmCompositeFlowState.phase = 7; lstmCompositeFlowState.running = false;
+      const btn = document.getElementById('lstmCompositeAnimateBtn');
+      if(btn) btn.textContent = 'Step';
+    }
+  }
+
+  function resetLstmCompositeFlow(){
+    if(!lstmCompositeLayout) return;
+    lstmCompositeFlowState.dots.forEach(d=>d.remove());
+    lstmCompositeFlowState.dots = []; lstmCompositeFlowState.phase = 0; lstmCompositeFlowState.running = false;
+  }
+  if(lstmCompositeAnimateBtn){
+    lstmCompositeAnimateBtn.addEventListener('click', ()=>{
+      lstmCompositeFlowState.autoRun = false; // manual step cancels auto-run if set
+      if(lstmCompositeFlowState.phase === 0) {
+        animateLstmCompositeStep1();
+      } else if(lstmCompositeFlowState.phase === 1) {
+        animateLstmCompositeStep2();
+      } else if(lstmCompositeFlowState.phase === 2) {
+        animateLstmCompositeStep3();
+      } else if(lstmCompositeFlowState.phase === 3) {
+        animateLstmCompositeStep4();
+      } else if(lstmCompositeFlowState.phase === 4) {
+        animateLstmCompositeStep5();
+      } else if(lstmCompositeFlowState.phase === 5) {
+        animateLstmCompositeStep6();
+      } else if(lstmCompositeFlowState.phase === 6) {
+        animateLstmCompositeStep7();
+      }
+    });
+  }
+  if(lstmCompositeAnimateAllBtn){
+    lstmCompositeAnimateAllBtn.addEventListener('click', ()=>{
+      // Reset and start auto-run from step1
+      resetLstmCompositeFlow();
+      lstmCompositeFlowState.autoRun = true;
+      animateLstmCompositeStep1();
+    });
+  }
+  if(lstmCompositeResetBtn){ lstmCompositeResetBtn.addEventListener('click', resetLstmCompositeFlow); }
 
   function animateStep(){
     if(animated) return; // simple single-step

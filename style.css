@@ -124,3 +124,10 @@ footer { opacity:.6; text-align:center; }
 /* Tanh activation rectangle (third arrow) */
 .lstm-activation-rect-tanh { fill:#1e1b4b; stroke:#ef4444; stroke-width:2; }
 .lstm-activation-symbol-tanh { fill:#e6e9ed; font-size:14px; font-weight:600; text-anchor:middle; dominant-baseline:middle; letter-spacing:.5px; }
+/* Flow animation dots */
+.anim-flow-dot { stroke-width:2; opacity:0.95; }
+.anim-dot-red { fill:#ef4444; stroke:#ef4444; }
+.anim-dot-orange { fill:#f59e0b; stroke:#f59e0b; }
+.anim-dot-green { fill:#10b981; stroke:#10b981; }
+.anim-dot-purple { fill:#9333ea; stroke:#9333ea; }
+.anim-dot-blue { fill:#3b82f6; stroke:#3b82f6; }
