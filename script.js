@@ -54,6 +54,11 @@
   let outputGateTimeoutId = null;
   let outputGateOverlay = null;
   let outputGateCombinedAnimated = false;
+  // LSTM Composite elements
+  const lstmHiddenSlider = document.getElementById('lstmHiddenSize');
+  const lstmHiddenValue = document.getElementById('lstmHiddenValue');
+  const lstmCompositeContainer = document.getElementById('lstm-composite-container');
+  let lstmCompositeLayout = null;
 
   // Overlay SVG for animation clones
   let overlaySvgHidden = null;
@@ -1093,6 +1098,289 @@
     overlaySvgHidden.style.height = rect.height + 'px';
     overlaySvgHidden.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
     document.body.appendChild(overlaySvgHidden);
+  }
+
+  // Build static LSTM composite diagram (full version stored as buildLstmFull; step1 uses simplified builder below)
+  // Full canonical diagram kept for later steps
+  function buildLstmFull(container){
+    const count = 1; // not used currently
+    if(!container) return;
+    container.innerHTML='';
+    const svg = document.createElementNS(svgNS,'svg');
+    svg.setAttribute('viewBox', `0 0 ${dims.w} ${dims.h}`);
+    container.appendChild(svg);
+    const cellBox = document.createElementNS(svgNS,'rect');
+    cellBox.setAttribute('x', 140);
+    cellBox.setAttribute('y', 40);
+    cellBox.setAttribute('width', 520);
+    cellBox.setAttribute('height', 300);
+    cellBox.setAttribute('rx', 18);
+    cellBox.setAttribute('fill', 'none');
+    cellBox.setAttribute('stroke', '#334155');
+    cellBox.setAttribute('stroke-width','2');
+    svg.appendChild(cellBox);
+    function addInput(x,y,label,cls){
+      const c = document.createElementNS(svgNS,'circle');
+      c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 24); c.classList.add(cls); svg.appendChild(c);
+      const t = document.createElementNS(svgNS,'text'); t.textContent = label; t.setAttribute('x', x); t.setAttribute('y', y+4); t.classList.add('lstm-label'); svg.appendChild(t); return {x,y};
+    }
+    const hPrev = addInput(70, 140, 'h_{t-1}', 'lstm-hidden-circle');
+    const xT    = addInput(70, 220, 'x_t', 'lstm-input-circle');
+    const concatX = 110, concatY = 180;
+    const concatRect = document.createElementNS(svgNS,'rect');
+    concatRect.setAttribute('x', concatX - 26); concatRect.setAttribute('y', concatY - 26); concatRect.setAttribute('width', 52); concatRect.setAttribute('height', 52); concatRect.setAttribute('rx', 10);
+    concatRect.setAttribute('fill','#1e1b4b'); concatRect.setAttribute('stroke','#64748b'); concatRect.setAttribute('stroke-width','2'); svg.appendChild(concatRect);
+    const concatLabel = document.createElementNS(svgNS,'text'); concatLabel.textContent='concat'; concatLabel.setAttribute('x', concatX); concatLabel.setAttribute('y', concatY+4); concatLabel.classList.add('lstm-label'); svg.appendChild(concatLabel);
+    function link(a,b){ const line=document.createElementNS(svgNS,'line'); line.setAttribute('x1', a.x); line.setAttribute('y1', a.y); line.setAttribute('x2', b.x); line.setAttribute('y2', b.y); line.classList.add('lstm-connector'); svg.appendChild(line);}    
+    link(hPrev,{x:concatX-26, y:concatY-10}); link(xT,{x:concatX-26, y:concatY+10});
+    const gateBaseX = 200;
+    const gateY = { f:100, i:170, g:240, o:310 };
+    function addGate(x,y,type){
+      const r = document.createElementNS(svgNS,'rect'); r.setAttribute('x', x); r.setAttribute('y', y); r.setAttribute('width',80); r.setAttribute('height',50); r.setAttribute('rx',8);
+      r.setAttribute('fill','#1e1b4b'); r.setAttribute('stroke', type==='g' ? '#ef4444' : '#eab308'); r.setAttribute('stroke-width','2'); svg.appendChild(r);
+      const lab = document.createElementNS(svgNS,'text'); lab.textContent = type==='g' ? 'tanh' : 'σ'; lab.setAttribute('x', x+40); lab.setAttribute('y', y+18); lab.classList.add('lstm-label'); svg.appendChild(lab);
+      const out = document.createElementNS(svgNS,'text'); out.textContent = type==='g' ? 'C̃_t' : (type+'_t'); out.setAttribute('x', x+40); out.setAttribute('y', y+36); out.classList.add('lstm-label'); svg.appendChild(out);
+      return { x: x+80, y: y+25, gate: type };
+    }
+    const fGate = addGate(gateBaseX, gateY.f, 'f');
+    const iGate = addGate(gateBaseX, gateY.i, 'i');
+    const gGate = addGate(gateBaseX, gateY.g, 'g');
+    const oGate = addGate(gateBaseX, gateY.o, 'o');
+    [fGate,iGate,gGate,oGate].forEach(g=>{
+      const line=document.createElementNS(svgNS,'line'); line.setAttribute('x1', concatX+26); line.setAttribute('y1', concatY); line.setAttribute('x2', g.x-10); line.setAttribute('y2', g.y); line.classList.add('lstm-connector'); svg.appendChild(line);
+    });
+    const cPrevX = 300, cY = 75;
+    function triangle(x,label){
+      const tri=document.createElementNS(svgNS,'polygon'); const top=cY-18; const blX=x-18, blY=cY+18; const brX=x+18, brY=cY+18; tri.setAttribute('points',`${x},${top} ${blX},${blY} ${brX},${brY}`); tri.classList.add('lstm-cell-triangle'); svg.appendChild(tri); const t=document.createElementNS(svgNS,'text'); t.textContent=label; t.setAttribute('x', x); t.setAttribute('y', cY+36); t.classList.add('lstm-label'); svg.appendChild(t); return x; }
+    triangle(cPrevX,'C_{t-1}');
+    function opNode(x,char){ const g=document.createElementNS(svgNS,'circle'); g.setAttribute('cx', x); g.setAttribute('cy', cY); g.setAttribute('r', 16); g.setAttribute('fill','#1e293b'); g.setAttribute('stroke','#64748b'); g.setAttribute('stroke-width','2'); svg.appendChild(g); const txt=document.createElementNS(svgNS,'text'); txt.textContent=char; txt.setAttribute('x', x); txt.setAttribute('y', cY+4); txt.classList.add('lstm-op'); svg.appendChild(txt); return x; }
+    const mult1X = cPrevX + 70; opNode(mult1X,'×');
+    const fLine=document.createElementNS(svgNS,'line'); fLine.setAttribute('x1', fGate.x); fLine.setAttribute('y1', fGate.y); fLine.setAttribute('x2', mult1X); fLine.setAttribute('y2', cY); fLine.classList.add('lstm-connector','emph'); svg.appendChild(fLine);
+    const mult2X = mult1X + 110; opNode(mult2X,'×');
+    const iLine=document.createElementNS(svgNS,'line'); iLine.setAttribute('x1', iGate.x); iLine.setAttribute('y1', iGate.y); iLine.setAttribute('x2', mult2X); iLine.setAttribute('y2', cY - 20); iLine.classList.add('lstm-connector','emph'); svg.appendChild(iLine);
+    const gLine=document.createElementNS(svgNS,'line'); gLine.setAttribute('x1', gGate.x); gLine.setAttribute('y1', gGate.y); gLine.setAttribute('x2', mult2X); gLine.setAttribute('y2', cY + 20); gLine.classList.add('lstm-connector','emph'); svg.appendChild(gLine);
+    const plusX = mult2X + 70; opNode(plusX,'+');
+    const cNowX = plusX + 70; triangle(cNowX,'C_t');
+    const tanhX = cNowX + 90; const tanhRect=document.createElementNS(svgNS,'rect'); tanhRect.setAttribute('x', tanhX-30); tanhRect.setAttribute('y', cY-30); tanhRect.setAttribute('width',60); tanhRect.setAttribute('height',60); tanhRect.setAttribute('rx',10); tanhRect.setAttribute('fill','#1e1b4b'); tanhRect.setAttribute('stroke','#ef4444'); tanhRect.setAttribute('stroke-width','2'); svg.appendChild(tanhRect); const tanhTxt=document.createElementNS(svgNS,'text'); tanhTxt.textContent='tanh'; tanhTxt.setAttribute('x', tanhX); tanhTxt.setAttribute('y', cY+4); tanhTxt.classList.add('lstm-label'); svg.appendChild(tanhTxt);
+    const mult3X = tanhX + 80; opNode(mult3X,'×'); const oLine=document.createElementNS(svgNS,'line'); oLine.setAttribute('x1', oGate.x); oLine.setAttribute('y1', oGate.y); oLine.setAttribute('x2', mult3X); oLine.setAttribute('y2', cY); oLine.classList.add('lstm-connector','emph'); svg.appendChild(oLine);
+    const hOutY = cY + 140; const hOutCircle=document.createElementNS(svgNS,'circle'); hOutCircle.setAttribute('cx', mult3X); hOutCircle.setAttribute('cy', hOutY); hOutCircle.setAttribute('r',24); hOutCircle.classList.add('lstm-hidden-circle'); svg.appendChild(hOutCircle); const hOutLabel=document.createElementNS(svgNS,'text'); hOutLabel.textContent='h_t'; hOutLabel.setAttribute('x', mult3X); hOutLabel.setAttribute('y', hOutY+4); hOutLabel.classList.add('lstm-label'); svg.appendChild(hOutLabel); const downLine=document.createElementNS(svgNS,'line'); downLine.setAttribute('x1', mult3X); downLine.setAttribute('y1', cY + 16); downLine.setAttribute('x2', mult3X); downLine.setAttribute('y2', hOutY - 24); downLine.classList.add('lstm-connector'); svg.appendChild(downLine);
+    function weightLabel(x,y,sub){ const w=document.createElementNS(svgNS,'text'); w.textContent=''; const base=document.createTextNode('W'); const tspan=document.createElementNS(svgNS,'tspan'); tspan.textContent=sub; tspan.classList.add('subscript'); w.appendChild(base); w.appendChild(tspan); w.setAttribute('x', x); w.setAttribute('y', y); w.classList.add('lstm-weight-label'); w.setAttribute('text-anchor','middle'); svg.appendChild(w);}    
+    weightLabel(gateBaseX+40, gateY.f - 10, 'f');
+    weightLabel(gateBaseX+40, gateY.i - 10, 'i');
+    weightLabel(gateBaseX+40, gateY.g - 10, 'c');
+    weightLabel(gateBaseX+40, gateY.o - 10, 'o');
+    return { svg };
+  }
+
+  // Step 1: simple panel with two incoming arrows (top & bottom)
+  function buildLstmComposite(container){
+    if(!container) return;
+    container.innerHTML='';
+    const svg = document.createElementNS(svgNS,'svg');
+    svg.setAttribute('viewBox', `0 0 ${dims.w} ${dims.h}`);
+    container.appendChild(svg);
+    // Panel box centered
+    const panelX = 160, panelY = 60, panelW = 480, panelH = 260;
+    const box = document.createElementNS(svgNS,'rect');
+    box.setAttribute('x', panelX);
+    box.setAttribute('y', panelY);
+    box.setAttribute('width', panelW);
+    box.setAttribute('height', panelH);
+    box.setAttribute('rx', 18);
+    box.setAttribute('fill','none');
+    box.setAttribute('stroke','#334155');
+    box.setAttribute('stroke-width','2');
+    svg.appendChild(box);
+    // Arrow markers
+    const defs = document.createElementNS(svgNS,'defs');
+    const marker = document.createElementNS(svgNS,'marker');
+    marker.setAttribute('id','lstmSimpleArrow');
+    marker.setAttribute('viewBox','0 0 10 10');
+    marker.setAttribute('refX','9');
+    marker.setAttribute('refY','5');
+    marker.setAttribute('markerWidth','7');
+    marker.setAttribute('markerHeight','7');
+    marker.setAttribute('orient','auto');
+    const mPath = document.createElementNS(svgNS,'path');
+    mPath.setAttribute('d','M 0 0 L 10 5 L 0 10 z');
+    mPath.setAttribute('fill','#9333ea');
+    marker.appendChild(mPath);
+    defs.appendChild(marker);
+    svg.appendChild(defs);
+    // Incoming arrows remain outside panel; only vertical arrows stay inside
+    const topY = panelY + 40;
+    const bottomY = panelY + panelH - 40;
+    const incomingStartX = panelX - 100;
+    const incomingEndX = panelX; // panel left edge
+    const lineTop = document.createElementNS(svgNS,'line');
+    lineTop.setAttribute('x1', incomingStartX);
+    lineTop.setAttribute('y1', topY);
+    lineTop.setAttribute('x2', incomingEndX);
+    lineTop.setAttribute('y2', topY);
+    lineTop.setAttribute('stroke','#9333ea');
+    lineTop.setAttribute('stroke-width','3');
+    lineTop.setAttribute('marker-end','url(#lstmSimpleArrow)');
+    svg.appendChild(lineTop);
+    const lineBottom = document.createElementNS(svgNS,'line');
+    lineBottom.setAttribute('x1', incomingStartX);
+    lineBottom.setAttribute('y1', bottomY);
+    lineBottom.setAttribute('x2', incomingEndX);
+    lineBottom.setAttribute('y2', bottomY);
+    lineBottom.setAttribute('stroke','#9333ea');
+    lineBottom.setAttribute('stroke-width','3');
+    lineBottom.setAttribute('marker-end','url(#lstmSimpleArrow)');
+    svg.appendChild(lineBottom);
+    // Placeholder labels for user to refine later
+    const topLabel = document.createElementNS(svgNS,'text');
+    topLabel.textContent='C';
+    topLabel.setAttribute('x', incomingStartX - 5);
+    topLabel.setAttribute('y', topY - 10);
+    topLabel.setAttribute('text-anchor','end');
+    topLabel.classList.add('lstm-label');
+    svg.appendChild(topLabel);
+    const bottomLabel = document.createElementNS(svgNS,'text');
+    bottomLabel.textContent='h';
+    bottomLabel.setAttribute('x', incomingStartX - 5);
+    bottomLabel.setAttribute('y', bottomY - 10);
+    bottomLabel.setAttribute('text-anchor','end');
+    bottomLabel.classList.add('lstm-label');
+    svg.appendChild(bottomLabel);
+    // Top horizontal line now starts at panelX (no visual gap to incoming arrow)
+    const topLine = document.createElementNS(svgNS,'line');
+    const verticalStartX = panelX + 140; // internal starting point for vertical connectors (vertical arrows originate here)
+    topLine.setAttribute('x1', panelX);
+    topLine.setAttribute('y1', topY);
+    topLine.setAttribute('x2', panelX + panelW);
+    topLine.setAttribute('y2', topY);
+    topLine.classList.add('lstm-path-line');
+    svg.appendChild(topLine);
+    // Split bottom path: shorter segment, gap, then segment to right edge
+    const bottomFirstEnd = panelX + panelW * 0.45; // shorten to 45% panel width
+    const gapSize = 70; // visual gap
+    const bottomSecondStart = bottomFirstEnd + gapSize;
+    // First bottom segment starts at panelX (flush with incoming bottom arrow end)
+    const bottomLine1 = document.createElementNS(svgNS,'line');
+    bottomLine1.setAttribute('x1', panelX);
+    bottomLine1.setAttribute('y1', bottomY);
+    bottomLine1.setAttribute('x2', bottomFirstEnd);
+    bottomLine1.setAttribute('y2', bottomY);
+    bottomLine1.classList.add('lstm-path-line');
+    svg.appendChild(bottomLine1);
+    // Four equally spaced upward arrows from first bottom segment to top line
+    const upwardCount = 4;
+    // Distribute across entire first bottom segment (from panelX to bottomFirstEnd)
+    const startXBottom = panelX;
+    const spanWidth = bottomFirstEnd - startXBottom;
+    for(let i=1;i<=upwardCount;i++){
+      // Distribute so last arrow sits exactly at bottomFirstEnd
+      const xPos = startXBottom + (i * spanWidth)/upwardCount;
+      // Collect x positions for potential custom path adjustments
+      if(!svg._verticalXs){ svg._verticalXs = []; }
+      svg._verticalXs.push(xPos);
+      // Second and fourth arrows will be drawn later as bent paths
+      if(i === 2 || i === 4) continue;
+      const upLine = document.createElementNS(svgNS,'line');
+      upLine.setAttribute('x1', xPos);
+      upLine.setAttribute('y1', bottomY);
+      upLine.setAttribute('x2', xPos);
+      upLine.setAttribute('y2', topY);
+      upLine.setAttribute('stroke','#9333ea');
+      upLine.setAttribute('stroke-width','3');
+      upLine.setAttribute('marker-end','url(#lstmSimpleArrow)');
+      svg.appendChild(upLine);
+    }
+    // Add bent second arrow: curve from bottom at second x up and right to meet third vertical arrow mid-height
+    if(svg._verticalXs && svg._verticalXs.length === upwardCount){
+      const secondX = svg._verticalXs[1];
+      const thirdX = svg._verticalXs[2];
+      const midY = (bottomY + topY)/2;
+      const path = document.createElementNS(svgNS,'path');
+      // Right-angle bend: vertical then horizontal to third arrow midY
+      const d = `M ${secondX} ${bottomY} L ${secondX} ${midY} L ${thirdX} ${midY}`;
+      path.setAttribute('d', d);
+      path.setAttribute('fill','none');
+      path.setAttribute('stroke','#9333ea');
+      path.setAttribute('stroke-width','3');
+      path.setAttribute('marker-end','url(#lstmSimpleArrow)');
+      svg.appendChild(path);
+      // Fourth arrow bent into vertical connector at start of second bottom segment
+      const fourthX = svg._verticalXs[3];
+      const connectorX = bottomSecondStart; // vertical connector x
+      const midY4 = (bottomY + topY)/2; // reuse midpoint height
+      const path4 = document.createElementNS(svgNS,'path');
+      // Right-angle: up then right to connector vertical line midpoint
+      const d4 = `M ${fourthX} ${bottomY} L ${fourthX} ${midY4} L ${connectorX} ${midY4}`;
+      path4.setAttribute('d', d4);
+      path4.setAttribute('fill','none');
+      path4.setAttribute('stroke','#9333ea');
+      path4.setAttribute('stroke-width','3');
+      path4.setAttribute('marker-end','url(#lstmSimpleArrow)');
+      svg.appendChild(path4);
+    }
+    // Second segment
+    const bottomLine2 = document.createElementNS(svgNS,'line');
+    bottomLine2.setAttribute('x1', bottomSecondStart);
+    bottomLine2.setAttribute('y1', bottomY);
+    bottomLine2.setAttribute('x2', panelX + panelW);
+    bottomLine2.setAttribute('y2', bottomY);
+    bottomLine2.classList.add('lstm-path-line');
+    svg.appendChild(bottomLine2);
+    // Vertical connector (no arrow) at start of second bottom segment up to top line
+    const secondSegConnector = document.createElementNS(svgNS,'line');
+    secondSegConnector.setAttribute('x1', bottomSecondStart);
+    secondSegConnector.setAttribute('y1', bottomY);
+    secondSegConnector.setAttribute('x2', bottomSecondStart);
+    secondSegConnector.setAttribute('y2', topY);
+    secondSegConnector.classList.add('lstm-path-line');
+    svg.appendChild(secondSegConnector);
+    // Outgoing arrows (outputs) from right edge
+    const outArrowLength = 120;
+    // Top output C'
+    const topOut = document.createElementNS(svgNS,'line');
+    topOut.setAttribute('x1', panelX + panelW);
+    topOut.setAttribute('y1', topY);
+    topOut.setAttribute('x2', panelX + panelW + outArrowLength);
+    topOut.setAttribute('y2', topY);
+    topOut.setAttribute('stroke','#9333ea');
+    topOut.setAttribute('stroke-width','3');
+    topOut.setAttribute('marker-end','url(#lstmSimpleArrow)');
+    svg.appendChild(topOut);
+    const topOutLabel = document.createElementNS(svgNS,'text');
+    topOutLabel.textContent = "C'";
+    topOutLabel.setAttribute('x', panelX + panelW + outArrowLength + 10);
+    topOutLabel.setAttribute('y', topY - 6);
+    topOutLabel.classList.add('lstm-label');
+    topOutLabel.setAttribute('text-anchor','start');
+    svg.appendChild(topOutLabel);
+    // Bottom output h'
+    const bottomOut = document.createElementNS(svgNS,'line');
+    bottomOut.setAttribute('x1', panelX + panelW);
+    bottomOut.setAttribute('y1', bottomY);
+    bottomOut.setAttribute('x2', panelX + panelW + outArrowLength);
+    bottomOut.setAttribute('y2', bottomY);
+    bottomOut.setAttribute('stroke','#9333ea');
+    bottomOut.setAttribute('stroke-width','3');
+    bottomOut.setAttribute('marker-end','url(#lstmSimpleArrow)');
+    svg.appendChild(bottomOut);
+    const bottomOutLabel = document.createElementNS(svgNS,'text');
+    bottomOutLabel.textContent = "h'";
+    bottomOutLabel.setAttribute('x', panelX + panelW + outArrowLength + 10);
+    bottomOutLabel.setAttribute('y', bottomY - 6);
+    bottomOutLabel.classList.add('lstm-label');
+    bottomOutLabel.setAttribute('text-anchor','start');
+    svg.appendChild(bottomOutLabel);
+    return { svg };
+  }
+
+  function rebuildLstmComposite(){
+    if(!lstmHiddenSlider || !lstmCompositeContainer) return;
+    const n = parseInt(lstmHiddenSlider.value,10); // currently unused in step1
+    lstmHiddenValue.textContent = n;
+    lstmCompositeLayout = buildLstmComposite(lstmCompositeContainer);
+  }
+  if(lstmHiddenSlider){
+    lstmHiddenSlider.addEventListener('input', rebuildLstmComposite);
+    rebuildLstmComposite();
   }
 
   function animateStep(){

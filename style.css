@@ -103,3 +103,15 @@ footer { opacity:.6; text-align:center; }
 .inline-matrix-label { fill:#e6e9ed; font-size:16px; font-weight:600; opacity:0; }
 .inline-matrix-label.visible { opacity:1; transition: opacity .4s ease; }
 .inline-matrix-label tspan.subscript { font-size:0.65em; baseline-shift:sub; }
+
+/* LSTM composite diagram static styles */
+.lstm-gate-circle { fill:#12161c; stroke:#9333ea; stroke-width:2; }
+.lstm-input-circle { fill:#12161c; stroke:#10b981; stroke-width:2; }
+.lstm-hidden-circle { fill:#12161c; stroke:#f59e0b; stroke-width:2; }
+.lstm-cell-triangle { fill:none; stroke:#ec4899; stroke-width:2.5; }
+.lstm-op { fill:#e6e9ed; font-size:14px; font-weight:600; text-anchor:middle; dominant-baseline:middle; }
+.lstm-label { fill:#e6e9ed; font-size:12px; font-weight:600; text-anchor:middle; dominant-baseline:middle; }
+.lstm-weight-label { fill:#e6e9ed; font-size:14px; font-weight:600; }
+.lstm-connector { stroke:#475569; stroke-width:2; opacity:.65; }
+.lstm-connector.emph { stroke:#9333ea; opacity:.9; }
+.lstm-path-line { stroke:#9333ea; stroke-width:3; fill:none; }

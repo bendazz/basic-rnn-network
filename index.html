@@ -130,6 +130,19 @@
       </section>
     </div>
   </section>
+  <hr class="section-divider" />
+  <section class="content-section">
+    <h2>LSTM Composite</h2>
+    <div class="global-controls">
+      <div class="size-control">
+        <label for="lstmHiddenSize">Hidden Size: <span id="lstmHiddenValue">3</span></label>
+        <input type="range" id="lstmHiddenSize" min="1" max="5" value="3" />
+      </div>
+    </div>
+    <section class="panel">
+      <div id="lstm-composite-container" class="network-box" aria-label="Full LSTM cell composite diagram"></div>
+    </section>
+  </section>
   <script src="script.js"></script>
 </body>
 </html>
