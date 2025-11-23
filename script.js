@@ -2522,4 +2522,99 @@
     });
   }
   initForgetGateReveal();
+  // Input gate practice data & logic
+  const inputGatePracticeData = {
+    IG1: {
+      x: [1.0, -0.5],
+      h: [0.2, -0.1, 0.3],
+      C: [0.5, -0.25, 1.0],
+      Wx: [ [0.4, -0.3], [0.1, 0.5], [-0.2, 0.6] ],
+      Wh: [ [0.3, -0.1, 0.2], [-0.4, 0.25, 0.1], [0.5, -0.3, 0.4] ],
+      Wi: [ [0.15, -0.05, 0.2], [-0.1, 0.3, 0.05], [0.25, -0.2, 0.1] ],
+      WC: [ [0.2, 0.1, -0.1], [-0.15, 0.25, 0.05], [0.05, -0.2, 0.3] ],
+      b_i: [0.02, -0.01, 0.03],
+      b_C: [0.0, 0.04, -0.02]
+    },
+    IG2: {
+      x: [0.5, -1.0, 2.0],
+      h: [0.1, 0.0, -0.2, 0.3],
+      C: [1.0, -0.5, 0.25, 0.75],
+      Wx: [ [0.3, -0.2, 0.4], [0.0, 0.6, -0.5], [0.25, 0.15, -0.3], [-0.2, 0.1, 0.35] ],
+      Wh: [ [0.4, -0.3, 0.0, 0.2], [-0.2, 0.1, 0.5, -0.1], [0.3, 0.2, -0.4, 0.1], [0.0, -0.25, 0.35, 0.2] ],
+      Wi: [ [0.2, -0.1, 0.3, -0.2], [0.1, 0.0, -0.25, 0.2], [-0.3, 0.4, 0.1, 0.35], [0.25, -0.15, 0.2, 0.1] ],
+      WC: [ [0.1, 0.05, -0.1, 0.2], [0.05, -0.02, 0.15, -0.05], [0.2, -0.1, 0.05, 0.1], [-0.1, 0.2, 0.05, 0.0] ],
+      b_i: [0.00, 0.05, -0.03, 0.08],
+      b_C: [0.02, -0.01, 0.04, 0.0]
+    },
+    IG3: {
+      x: [-1.0, 0.25, 0.5],
+      h: [0.6, -0.4],
+      C: [0.2, 1.25],
+      Wx: [ [0.6, -0.4, 0.2], [-0.3, 0.5, 0.1] ],
+      Wh: [ [0.2, -0.1], [-0.25, 0.35] ],
+      Wi: [ [0.4, -0.2], [-0.3, 0.5] ],
+      WC: [ [0.3, -0.15], [-0.2, 0.25] ],
+      b_i: [0.01, -0.02],
+      b_C: [0.0, 0.03]
+    }
+  };
+  function computeInputGate(data){
+    const hiddenSize = data.h.length;
+    // v = Wx x + Wh h
+    const v = new Array(hiddenSize).fill(0);
+    for(let i=0;i<hiddenSize;i++){
+      for(let j=0;j<data.x.length;j++){ v[i] += data.Wx[i][j] * data.x[j]; }
+      for(let k=0;k<hiddenSize;k++){ v[i] += data.Wh[i][k] * data.h[k]; }
+    }
+    // z_i = Wi v + b_i
+    const z_i = new Array(hiddenSize).fill(0);
+    for(let i=0;i<hiddenSize;i++){
+      for(let k=0;k<hiddenSize;k++){ z_i[i] += data.Wi[i][k] * v[k]; }
+      if(data.b_i){ z_i[i] += data.b_i[i]; }
+    }
+    const i_act = z_i.map(sigmoid);
+    // z_c = WC v + b_C
+    const z_c = new Array(hiddenSize).fill(0);
+    for(let i=0;i<hiddenSize;i++){
+      for(let k=0;k<hiddenSize;k++){ z_c[i] += data.WC[i][k] * v[k]; }
+      if(data.b_C){ z_c[i] += data.b_C[i]; }
+    }
+    const c_tilde = z_c.map(Math.tanh);
+    const c_add = c_tilde.map((ct,i)=> ct * i_act[i]);
+    // final cell after adding the input-gate contribution
+    const C_final = (data.C && data.C.length === c_add.length) ? data.C.map((c,i)=> c + c_add[i]) : null;
+    return { v, z_i, i_act, z_c, c_tilde, c_add, C_final };
+  }
+  function initInputGateReveal(){
+    document.querySelectorAll('.input-gate-problem').forEach(prob => {
+      const id = prob.getAttribute('data-ig-problem');
+      const btn = prob.querySelector('.practice-show-ig-btn');
+      const sol = prob.querySelector('.practice-solution');
+      if(!id || !btn || !sol || !inputGatePracticeData[id]) return;
+      btn.addEventListener('click', ()=>{
+        if(sol.hasAttribute('hidden')){
+          const { v, z_i, i_act, z_c, c_tilde, c_add, C_final } = computeInputGate(inputGatePracticeData[id]);
+          const vStr = v.map(v=>v.toFixed(6)).join(', ');
+          const ziStr = z_i.map(v=>v.toFixed(6)).join(', ');
+          const iStr = i_act.map(v=>v.toFixed(6)).join(', ');
+          const zcStr = z_c.map(v=>v.toFixed(6)).join(', ');
+          const ctStr = c_tilde.map(v=>v.toFixed(6)).join(', ');
+          const addStr = c_add.map(v=>v.toFixed(6)).join(', ');
+          const cStr = inputGatePracticeData[id].C ? inputGatePracticeData[id].C.map(v=>v.toFixed(6)).join(', ') : '';
+          const finalCStr = C_final ? C_final.map(v=>v.toFixed(6)).join(', ') : '';
+          const biStr = inputGatePracticeData[id].b_i ? inputGatePracticeData[id].b_i.map(v=>v.toFixed(6)).join(', ') : '';
+          const bCStr = inputGatePracticeData[id].b_C ? inputGatePracticeData[id].b_C.map(v=>v.toFixed(6)).join(', ') : '';
+          const biLine = biStr ? `b_i: [${biStr}]\n` : '';
+          const bCLine = bCStr ? `b_C: [${bCStr}]\n` : '';
+          sol.textContent = `v: [${vStr}]\n${biLine}z_i: [${ziStr}]\ni: [${iStr}]\n\nC: [${cStr}]\nz_C: [${zcStr}]\nC_tilde: [${ctStr}]\ni ⊙ C_tilde: [${addStr}]\n\nC' = C + (i ⊙ C_tilde): [${finalCStr}]`;
+          sol.removeAttribute('hidden');
+          btn.textContent = 'Hide Answer';
+        } else {
+          sol.setAttribute('hidden','');
+          btn.textContent = 'Show Answer';
+        }
+      });
+    });
+  }
+  initInputGateReveal();
 })();
