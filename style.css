@@ -40,8 +40,7 @@ footer { opacity:.6; text-align:center; }
 .animation-controls button:hover { background:#4f46e5; }
 .overlay-layer { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
 .clone-node { stroke-width:2; }
-.bias-node { stroke:#3b82f6; fill:#0f172a; stroke-width:2; opacity:0; }
-.bias-node.visible { opacity:1; transition: opacity .6s ease; }
+.bias-node { display:none !important; }
 .result-node { stroke:#9333ea; fill:#1e1b4b; stroke-width:2; opacity:0; }
 .result-node.visible { opacity:1; transition: opacity .6s ease .2s; }
 .op-label { fill:#e6e9ed; font-size:28px; font-weight:600; opacity:0; }
@@ -68,6 +67,7 @@ footer { opacity:.6; text-align:center; }
 .rnn-output-label { fill:#e6e9ed; font-size:12px; font-weight:600; text-anchor:middle; dominant-baseline:middle; }
 .forget-output-circle { fill:#1e1b4b; stroke:#9333ea; stroke-width:2; opacity:0; }
 .forget-output-circle.visible { opacity:1; transition: opacity .5s ease; }
+.forget-output-circle.forget-flash { animation: forget-flash-yellow 700ms ease-in-out; }
 .forget-c-triangle { fill:none; stroke:#ec4899; stroke-width:2.5; opacity:0; }
 .forget-c-triangle.visible { opacity:1; transition: opacity .6s ease .2s; }
 .forget-op { fill:#e6e9ed; font-size:32px; font-weight:600; opacity:0; }
@@ -82,6 +82,8 @@ footer { opacity:.6; text-align:center; }
 .square-node.input-flash { animation: forget-flash-yellow 700ms ease-in-out; }
 .input-output-circle { fill:#1e1b4b; stroke:#9333ea; stroke-width:2; opacity:0; }
 .input-output-circle.visible { opacity:1; transition: opacity .5s ease; }
+.input-output-circle.input-flash { animation: forget-flash-yellow 700ms ease-in-out; }
+.input-output-circle.input-tanh-flash { animation: rnn-flash-red 700ms ease-in-out; }
 /* Combined panel operators */
 .combined-op { fill:#e6e9ed; font-size:28px; font-weight:600; opacity:0; }
 .combined-op.visible { opacity:1; transition: opacity .4s ease; }
@@ -96,6 +98,8 @@ footer { opacity:.6; text-align:center; }
 .forget-c-triangle.output-tanh-flash { animation: output-triangle-flash-red 700ms ease-in-out; }
 .output-gate-circle { fill:#1e1b4b; stroke:#9333ea; stroke-width:2; opacity:0; }
 .output-gate-circle.visible { opacity:1; transition: opacity .5s ease; }
+/* Flash variant for output gate second-panel circles */
+.output-gate-circle.output-flash { animation: forget-flash-yellow 700ms ease-in-out; }
 /* Input Gate second panel tanh flash (red) */
 .square-node.input-tanh-flash { animation: rnn-flash-red 700ms ease-in-out; }
 
@@ -131,3 +135,19 @@ footer { opacity:.6; text-align:center; }
 .anim-dot-green { fill:#10b981; stroke:#10b981; }
 .anim-dot-purple { fill:#9333ea; stroke:#9333ea; }
 .anim-dot-blue { fill:#3b82f6; stroke:#3b82f6; }
+
+/* Practice section styles */
+#practice-section .practice-intro { max-width:900px; font-size:.9rem; line-height:1.45; color:#cbd5e1; }
+.practice-problems { display:grid; gap:1.2rem; margin-top:1rem; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); }
+.practice-problem { background:#1b1f24; border:1px solid #2a313b; border-radius:10px; padding:0.85rem 0.9rem 1rem; position:relative; display:flex; flex-direction:column; }
+.practice-problem h3 { margin:0 0 .6rem; font-size:1rem; font-weight:600; letter-spacing:.5px; }
+.practice-problem pre { margin:0; background:#0f1115; border:1px solid #334155; padding:.6rem .7rem; border-radius:6px; overflow-x:auto; font-size:.75rem; line-height:1.25; }
+.practice-problem code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; white-space:pre; display:block; }
+.practice-copy-btn { align-self:flex-start; margin:-.2rem 0 .5rem; background:#2563eb; font-size:.7rem; padding:.4rem .65rem; }
+.practice-copy-btn:hover { background:#1d4ed8; }
+.practice-copy-btn.copied { background:#10b981; }
+/* Answer checking UI */
+.practice-answer { margin-top:.65rem; display:flex; flex-direction:column; gap:.45rem; }
+.practice-show-btn { align-self:flex-start; background:#9333ea; font-size:.7rem; padding:.4rem .65rem; }
+.practice-show-btn:hover { background:#7e22ce; }
+.practice-solution { background:#0f1115; border:1px solid #334155; border-radius:6px; padding:.5rem .6rem; font-size:.7rem; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; line-height:1.25; white-space:pre-wrap; }

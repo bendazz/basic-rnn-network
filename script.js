@@ -26,6 +26,7 @@
   let forgetVectorLayout = null;
   let forgetAnimated = false;
   let forgetTimeoutId = null;
+  let forgetSecondTimeoutId = null;
   // Input Gate elements
   const inputGateHiddenSlider = document.getElementById('inputGateHiddenSize');
   const inputGateHiddenValue = document.getElementById('inputGateHiddenValue');
@@ -38,6 +39,7 @@
   let inputGateTanhLayout = null;
   let inputGateAnimated = false;
   let inputGateTimeoutId = null;
+  let inputGateSecondTimeoutId = null;
   let inputGateOverlay = null;
   let inputGateCombinedAnimated = false;
   // Output Gate elements
@@ -52,6 +54,8 @@
   let outputGatePanel2Layout = null;
   let outputGateAnimated = false;
   let outputGateTimeoutId = null;
+  let outputGateSecondTimeoutId = null;
+  let outputGateThirdTimeoutId = null;
   let outputGateOverlay = null;
   let outputGateCombinedAnimated = false;
   // LSTM Composite elements
@@ -74,6 +78,15 @@
   const svgNS = 'http://www.w3.org/2000/svg';
   const padding = 70;
   const dims = { w: 800, h: 450 };
+  // Indexed label helpers (Unicode subscripts)
+  function toSubscript(n){
+    const map = { '0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉' };
+    return String(n).split('').map(d=>map[d]||d).join('');
+  }
+  function indexedLabel(base, index, opts={ prime:false }){
+    const primeChar = opts.prime ? '′' : '';
+    return `${base}${primeChar}${toSubscript(index)}`;
+  }
 
   function buildRnnVector(container, count){
     if(!container) return;
@@ -258,7 +271,7 @@
       tri.classList.add('forget-c-triangle');
       svg.appendChild(tri);
       const tLabel = document.createElementNS(svgNS,'text');
-      tLabel.textContent = `C'${i+1}`;
+      tLabel.textContent = indexedLabel('C', i+1, { prime:true });
       tLabel.setAttribute('x', centerX);
       tLabel.setAttribute('y', yCenter + 6);
       tLabel.setAttribute('text-anchor','middle');
@@ -439,7 +452,7 @@
         svg.appendChild(c);
 
         const t = document.createElementNS(svgNS,'text');
-        t.textContent = `h'${i+1}`;
+        t.textContent = indexedLabel('h', i+1, { prime:true });
         t.setAttribute('x', outputX);
         t.setAttribute('y', yCenter + 1);
         t.classList.add('rnn-output-label');
@@ -464,11 +477,7 @@
   function animateForget(){
     if(!forgetVectorLayout || forgetAnimated) return;
     const { svg, size, centerX, rows, squares } = forgetVectorLayout;
-    squares.forEach(sq => {
-      sq.classList.remove('forget-flash');
-      void sq.offsetWidth;
-      sq.classList.add('forget-flash');
-    });
+    // Previously flashed the squares; flash the output circles instead (handled below)
     const delay = 700;
     forgetTimeoutId = setTimeout(()=>{
       const outputX = centerX + size + 140;
@@ -496,7 +505,8 @@
         c.setAttribute('r', 24);
         c.classList.add('forget-output-circle');
         svg.appendChild(c);
-        requestAnimationFrame(()=> c.classList.add('visible'));
+        // trigger visibility and flash animation on the circle (makes circles flash instead of squares)
+        requestAnimationFrame(()=> { c.classList.add('visible'); c.classList.add('forget-flash'); });
       });
       // Add dynamic inline Wf label centered between squares and circles
       const squareCenterX = centerX + size/2;
@@ -534,32 +544,39 @@
       mult.setAttribute('text-anchor','middle');
       mult.classList.add('forget-op');
       svg.appendChild(mult);
-      requestAnimationFrame(()=> mult.classList.add('visible'));
-      rows.forEach((ry)=>{
-        const yCenter = ry + size/2;
-        const tri = document.createElementNS(svgNS,'polygon');
-        // Upward triangle points
-        const topY = yCenter - 22;
-        const blX = cColX - 22, blY = yCenter + 22;
-        const brX = cColX + 22, brY = yCenter + 22;
-        tri.setAttribute('points', `${cColX},${topY} ${blX},${blY} ${brX},${brY}`);
-        tri.classList.add('forget-c-triangle');
-        svg.appendChild(tri);
-        const label = document.createElementNS(svgNS,'text');
-        label.textContent = `C${rows.indexOf(ry)+1}`;
-        label.setAttribute('x', cColX);
-        label.setAttribute('y', yCenter + 6);
-        label.setAttribute('text-anchor','middle');
-        label.classList.add('triangle-label');
-        svg.appendChild(label);
-        requestAnimationFrame(()=> { tri.classList.add('visible'); label.classList.add('visible'); });
-      });
-      forgetAnimated = true;
+      // Delay showing the C triangles until after the circle flash completes
+      if(forgetSecondTimeoutId){ clearTimeout(forgetSecondTimeoutId); forgetSecondTimeoutId = null; }
+      forgetSecondTimeoutId = setTimeout(()=>{
+        // Make multiplication operator visible at same time as triangles
+        requestAnimationFrame(()=> mult.classList.add('visible'));
+        rows.forEach((ry)=>{
+          const yCenter = ry + size/2;
+          const tri = document.createElementNS(svgNS,'polygon');
+          // Upward triangle points
+          const topY = yCenter - 22;
+          const blX = cColX - 22, blY = yCenter + 22;
+          const brX = cColX + 22, brY = yCenter + 22;
+          tri.setAttribute('points', `${cColX},${topY} ${blX},${blY} ${brX},${brY}`);
+          tri.classList.add('forget-c-triangle');
+          svg.appendChild(tri);
+          const label = document.createElementNS(svgNS,'text');
+          label.textContent = indexedLabel('C', rows.indexOf(ry)+1);
+          label.setAttribute('x', cColX);
+          label.setAttribute('y', yCenter + 6);
+          label.setAttribute('text-anchor','middle');
+          label.classList.add('triangle-label');
+          svg.appendChild(label);
+          requestAnimationFrame(()=> { tri.classList.add('visible'); label.classList.add('visible'); });
+        });
+        forgetAnimated = true;
+        forgetSecondTimeoutId = null;
+      }, delay);
       forgetTimeoutId = null;
     }, delay);
   }
   function resetForget(){
     if(forgetTimeoutId){ clearTimeout(forgetTimeoutId); forgetTimeoutId = null; }
+    if(forgetSecondTimeoutId){ clearTimeout(forgetSecondTimeoutId); forgetSecondTimeoutId = null; }
     forgetAnimated = false;
     rebuildForget();
   }
@@ -610,12 +627,7 @@
   function animateInputGate(){
     if(!inputGateLayout || inputGateAnimated) return;
     const { svg, size, centerX, rows, squares } = inputGateLayout;
-    squares.forEach(sq => { sq.classList.remove('input-flash'); void sq.offsetWidth; sq.classList.add('input-flash'); });
-    if(inputGateTanhLayout){
-      // Second panel should show tanh (red) flash
-      const { squares: panel2Squares } = inputGateTanhLayout;
-      panel2Squares.forEach(sq => { sq.classList.remove('input-tanh-flash'); void sq.offsetWidth; sq.classList.add('input-tanh-flash'); });
-    }
+    // Flash will be applied to the output circles (not the input squares)
     const delay = 700;
     inputGateTimeoutId = setTimeout(()=>{
       const outputX = centerX + size + 140;
@@ -643,7 +655,8 @@
         c.setAttribute('r', 24);
         c.classList.add('input-output-circle');
         svg.appendChild(c);
-        requestAnimationFrame(()=> c.classList.add('visible'));
+        // make circles visible and flash (instead of flashing the input squares)
+        requestAnimationFrame(()=> { c.classList.add('visible'); c.classList.add('input-flash'); });
       });
       // Dynamic inline Wi label (sigmoid weights) centered between squares and circles
       const squareCenterX = centerX + size/2;
@@ -691,7 +704,8 @@
           c.setAttribute('r', 24);
           c.classList.add('input-output-circle');
           tanhSvg.appendChild(c);
-          requestAnimationFrame(()=> c.classList.add('visible'));
+          // visible + tanh-style flash (red)
+          requestAnimationFrame(()=> { c.classList.add('visible'); c.classList.add('input-tanh-flash'); });
         });
         // Dynamic inline WC (candidate weights) label for tanh panel
         const tSquareCenterX = tCenterX + tSize/2;
@@ -717,18 +731,16 @@
       }
       inputGateAnimated = true;
       inputGateTimeoutId = null;
-      // After first phase, run combined animation
-      runInputGateCombined();
+      // After first phase, delay combined overlay spawn until circles finish flashing
+      if(inputGateSecondTimeoutId){ clearTimeout(inputGateSecondTimeoutId); inputGateSecondTimeoutId = null; }
+      inputGateSecondTimeoutId = setTimeout(()=>{ runInputGateCombined(); inputGateSecondTimeoutId = null; }, delay);
     }, delay);
   }
 
   function animateOutputGate(){
     if(!outputGateLayout || outputGateAnimated) return;
     const { svg, centerX, rows, triangles } = outputGateLayout;
-    // Flash squares in second panel if present to mimic input gate first panel
-    if(outputGatePanel2Layout){
-      outputGatePanel2Layout.squares.forEach(sq => { sq.classList.remove('input-flash'); void sq.offsetWidth; sq.classList.add('input-flash'); });
-    }
+    // Triangles will flash first; second-panel circle creation is staged later
     // Flash triangles red (tanh) then produce purple circles in second panel
     triangles.forEach(tri => { tri.classList.remove('output-tanh-flash'); void tri.offsetWidth; tri.classList.add('output-tanh-flash'); });
     const delay = 700;
@@ -754,7 +766,7 @@
         svg.appendChild(circle);
         requestAnimationFrame(()=> circle.classList.add('visible'));
       });
-      // Build arrows and circles for second panel squares if present
+      // Build arrows for second panel and create their circles (do not flash yet)
       if(outputGatePanel2Layout){
         const { svg: svg2, size: size2, centerX: centerX2, rows: rows2 } = outputGatePanel2Layout;
         const circleColX2 = centerX2 + size2 + 140;
@@ -774,16 +786,31 @@
             svg2.appendChild(line);
           });
         });
-        // Circles on top
-        circleCenters2.forEach(cY => {
-          const circle = document.createElementNS(svgNS,'circle');
-          circle.setAttribute('cx', circleColX2);
-          circle.setAttribute('cy', cY);
-          circle.setAttribute('r', 24);
-          circle.classList.add('output-gate-circle');
-          svg2.appendChild(circle);
-          requestAnimationFrame(()=> circle.classList.add('visible'));
-        });
+        // Circles on top — create if not present, but postpone flashing until after they appear
+        const existing2 = svg2.querySelectorAll('circle.output-gate-circle');
+        if(existing2.length === 0){
+          circleCenters2.forEach(cY => {
+            const circle = document.createElementNS(svgNS,'circle');
+            circle.setAttribute('cx', circleColX2);
+            circle.setAttribute('cy', cY);
+            circle.setAttribute('r', 24);
+            circle.classList.add('output-gate-circle');
+            svg2.appendChild(circle);
+            requestAnimationFrame(()=> circle.classList.add('visible'));
+          });
+        } else {
+          existing2.forEach(c => requestAnimationFrame(()=> c.classList.add('visible')));
+        }
+        // After a short pause, flash second-panel circles and then spawn the combined overlay
+        if(outputGateSecondTimeoutId){ clearTimeout(outputGateSecondTimeoutId); outputGateSecondTimeoutId = null; }
+        outputGateSecondTimeoutId = setTimeout(()=>{
+          const toFlash = svg2.querySelectorAll('circle.output-gate-circle');
+          toFlash.forEach(c => { c.classList.remove('output-flash'); void c.offsetWidth; c.classList.add('output-flash'); });
+          // After the circle flash completes, run the combined overlay
+          if(outputGateThirdTimeoutId){ clearTimeout(outputGateThirdTimeoutId); outputGateThirdTimeoutId = null; }
+          outputGateThirdTimeoutId = setTimeout(()=>{ runOutputGateCombined(); outputGateThirdTimeoutId = null; }, delay);
+          outputGateSecondTimeoutId = null;
+        }, 80);
         // Dynamic Wo label (output gate weights) centered between squares and circles
         const squareCenterX2 = centerX2 + size2/2;
         const weightMidX2 = (squareCenterX2 + circleColX2)/2;
@@ -807,11 +834,13 @@
       }
       outputGateAnimated = true;
       outputGateTimeoutId = null;
-      runOutputGateCombined();
+      // Combined overlay spawn is scheduled after the second-panel circle flash (handled above).
     }, delay);
   }
   function resetOutputGate(){
     if(outputGateTimeoutId){ clearTimeout(outputGateTimeoutId); outputGateTimeoutId = null; }
+    if(outputGateSecondTimeoutId){ clearTimeout(outputGateSecondTimeoutId); outputGateSecondTimeoutId = null; }
+    if(outputGateThirdTimeoutId){ clearTimeout(outputGateThirdTimeoutId); outputGateThirdTimeoutId = null; }
     outputGateAnimated = false;
     outputGateCombinedAnimated = false;
     if(outputGateOverlay){ outputGateOverlay.remove(); outputGateOverlay = null; }
@@ -921,7 +950,7 @@
         circle.setAttribute('stroke-width','3');
         outputGateOverlay.appendChild(circle);
         const label = document.createElementNS(svgNS,'text');
-        label.textContent = `h'${i+1}`;
+        label.textContent = indexedLabel('h', i+1, { prime:true });
         label.setAttribute('x', resultColX);
         label.setAttribute('y', y + 1);
         label.setAttribute('text-anchor','middle');
@@ -934,6 +963,7 @@
   }
   function resetInputGate(){
     if(inputGateTimeoutId){ clearTimeout(inputGateTimeoutId); inputGateTimeoutId = null; }
+    if(inputGateSecondTimeoutId){ clearTimeout(inputGateSecondTimeoutId); inputGateSecondTimeoutId = null; }
     inputGateAnimated = false;
     inputGateCombinedAnimated = false;
     if(inputGateOverlay){ inputGateOverlay.remove(); inputGateOverlay = null; }
@@ -1077,7 +1107,7 @@
         tri.classList.add('forget-c-triangle');
         inputGateOverlay.appendChild(tri);
         const label = document.createElementNS(svgNS,'text');
-        label.textContent = `C'${i+1}`;
+        label.textContent = indexedLabel('C', i+1, { prime:true });
         label.setAttribute('x', col4X);
         label.setAttribute('y', y + 6); // moved further down to avoid triangle sides overlap
         label.classList.add('triangle-label');
@@ -2182,9 +2212,8 @@
   function revealExpression(endHidden, endGreen){
     if(!overlaySvgHidden) return;
     const count = endHidden.length;
-    // Layout columns
-    const biasColX = endGreen[0].x + 110; // bias vector column to right of green
-    const resultColX = biasColX + 110 + 55; // allow space for '=' then result
+    // Layout columns (no bias column for section one)
+    const resultColX = endGreen[0].x + 110; // result vector column to right of green
     // Vertically center operators between top and bottom of the vector columns
     const minY = endHidden[0].y;
     const maxY = endHidden[count - 1].y;
@@ -2193,10 +2222,8 @@
     const labelY = minY - 45;
     // Plus sign between hidden and green
     const plus1X = (endHidden[0].x + endGreen[0].x)/2;
-    // Plus sign between green and bias
-    const plus2X = (endGreen[0].x + biasColX)/2;
-    // Equals sign before result
-    const equalsX = biasColX + 55;
+    // Equals sign between green and result (no bias column)
+    const equalsX = (endGreen[0].x + resultColX)/2;
 
     function addOp(x, char){
       const t = document.createElementNS(svgNS,'text');
@@ -2209,7 +2236,6 @@
       requestAnimationFrame(()=> t.classList.add('visible'));
     }
     addOp(plus1X,'+');
-    addOp(plus2X,'+');
     addOp(equalsX,'=');
 
     function addVectorLabel(x, text){
@@ -2222,21 +2248,9 @@
       overlaySvgHidden.appendChild(t);
       requestAnimationFrame(()=> t.classList.add('visible'));
     }
-    // Hidden (orange), Input (green), Bias (blue)
+    // Hidden (orange) and Input (green)
     addVectorLabel(endHidden[0].x, 'hidden');
     addVectorLabel(endGreen[0].x, 'input');
-    addVectorLabel(biasColX, 'bias');
-
-    // Bias vector nodes (blue) at biasColX
-    for(let i=0;i<count;i++){
-      const b = document.createElementNS(svgNS,'circle');
-      b.setAttribute('cx', biasColX);
-      b.setAttribute('cy', endHidden[i].y);
-      b.setAttribute('r', 20);
-      b.classList.add('bias-node');
-      overlaySvgHidden.appendChild(b);
-      requestAnimationFrame(()=> b.classList.add('visible'));
-    }
 
     // Result vector squares at resultColX
     for(let i=0;i<count;i++){
@@ -2264,4 +2278,248 @@
   // Reset overlays when network rebuilt
   hiddenSlider.addEventListener('input', resetAnimation);
   inputSlider.addEventListener('input', resetAnimation);
+
+  // Practice section copy buttons
+  function initPracticeCopy(){
+    const problems = document.querySelectorAll('.practice-problem');
+    problems.forEach(prob => {
+      const btn = prob.querySelector('.practice-copy-btn');
+      const codeEl = prob.querySelector('code');
+      if(!btn || !codeEl) return;
+      btn.addEventListener('click', ()=>{
+        const text = codeEl.textContent.trim();
+        navigator.clipboard.writeText(text).then(()=>{
+          const original = btn.textContent;
+          btn.textContent = 'Copied!';
+          btn.classList.add('copied');
+          setTimeout(()=>{ btn.textContent = original; btn.classList.remove('copied'); }, 1200);
+        }).catch(()=>{
+          btn.textContent = 'Failed';
+          setTimeout(()=>{ btn.textContent = 'Copy Arrays'; }, 1500);
+        });
+      });
+    });
+  }
+  initPracticeCopy();
+  // Practice answer reveal logic (compute & display h_next)
+  const practiceData = {
+    1: {
+      x: [1.0,0.5,-1.0],
+      h_prev: [0.2,-0.1,0.05,0.3],
+      // no bias for base RNN practice (removed per request)
+      Wx: [ [0.3,-0.2,0.1], [0.0,0.5,-0.4], [0.25,0.15,-0.3], [-0.1,0.2,0.4] ],
+      Wh: [ [0.4,-0.3,0.0,0.2], [-0.2,0.1,0.5,-0.1], [0.3,0.2,-0.4,0.1], [0.0,-0.25,0.35,0.2] ]
+    },
+    2: {
+      x: [1.0,-2.0],
+      h_prev: [0.4,0.0,-0.3],
+      // no bias for base RNN practice (removed per request)
+      Wx: [ [0.6,-0.5],[0.2,0.1],[-0.3,0.4] ],
+      Wh: [ [0.2,-0.1,0.0],[-0.4,0.3,0.5],[0.1,-0.2,0.25] ]
+    },
+    3: {
+      x: [0.5,-1.0,1.5,0.0],
+      h_prev: [0.1,0.2,-0.2,0.0,0.3],
+      // no bias for base RNN practice (removed per request)
+      Wx: [ [0.1,-0.2,0.3,0.0],[0.4,0.0,-0.1,0.2],[-0.3,0.25,0.15,-0.05],[0.0,0.3,-0.2,0.4],[0.2,-0.1,0.0,0.1] ],
+      Wh: [ [0.2,-0.1,0.05,0.0,0.1],[0.0,0.3,-0.2,0.1,-0.05],[0.25,0.1,-0.4,0.0,0.2],[-0.1,0.2,0.3,-0.15,0.05],[0.05,-0.2,0.1,0.25,-0.3] ]
+    },
+    4: {
+      x: [2.0,-1.0,0.5],
+      h_prev: [1.0,-0.5,0.0],
+      // no bias for base RNN practice (removed per request)
+      Wx: [ [1.0,-2.0,1.0],[0.0,1.0,-1.0],[-1.0,2.0,0.0] ],
+      Wh: [ [2.0,-1.0,0.0],[-1.0,1.0,1.0],[0.0,-2.0,2.0] ]
+    },
+    5: {
+      x: [3.0,-2.0],
+      h_prev: [0.5,1.0,-0.5,0.0],
+      // no bias for base RNN practice (removed per request)
+      Wx: [ [1.2,-0.8],[0.5,1.1],[-1.0,0.9],[0.7,-0.6] ],
+      Wh: [ [0.9,-0.5,0.3,0.2],[0.4,0.8,-0.6,0.0],[-0.7,0.2,1.0,-0.4],[0.3,-0.9,0.5,0.6] ]
+    }
+  };
+  function computeHidden(data){
+    // Determine hidden size from Wh or h_prev fallback
+    const hSize = (data.b && data.b.length) || (data.h_prev && data.h_prev.length) || (data.Wh && data.Wh.length) || 0;
+    const inputSize = data.x.length;
+    const z = new Array(hSize).fill(0);
+    for(let i=0;i<hSize;i++){
+      // Wx @ x
+      for(let j=0;j<inputSize;j++){ z[i] += data.Wx[i][j] * data.x[j]; }
+      // Wh @ h_prev
+      for(let k=0;k<hSize && k < (data.h_prev ? data.h_prev.length : 0);k++){ z[i] += data.Wh[i][k] * data.h_prev[k]; }
+      // + b if present
+      if(data.b && data.b.length > i){ z[i] += data.b[i]; }
+    }
+    const h_next = z.map(v => Math.tanh(v));
+    return { z, h_next };
+  }
+  function initAnswerReveal(){
+    document.querySelectorAll('.practice-problem').forEach(prob => {
+      const probId = parseInt(prob.getAttribute('data-problem'),10);
+      const btn = prob.querySelector('.practice-show-btn');
+      const sol = prob.querySelector('.practice-solution');
+      if(!btn || !sol || !practiceData[probId]) return;
+      btn.addEventListener('click', ()=>{
+        if(sol.hasAttribute('hidden')){
+          const { h_next, z } = computeHidden(practiceData[probId]);
+          const zStr = z.map(v=>v.toFixed(6)).join(', ');
+          const hStr = h_next.map(v=>v.toFixed(6)).join(', ');
+          sol.textContent = `z: [${zStr}]\nh_next: [${hStr}]`;
+          sol.removeAttribute('hidden');
+          btn.textContent = 'Hide Answer';
+        } else {
+          sol.setAttribute('hidden','');
+          btn.textContent = 'Show Answer';
+        }
+      });
+    });
+  }
+  initAnswerReveal();
+  // Sequence practice data (multi-timestep unrolling, h0 zeros)
+  const sequencePracticeData = {
+    S1: {
+      Wx: [ [0.4,-0.3], [0.1,0.5], [-0.2,0.6] ],
+      Wh: [ [0.3,-0.1,0.2], [-0.4,0.25,0.1], [0.5,-0.3,0.4] ],
+      b:  [0.05,0.0,-0.1],
+      x_seq: [ [1.0,0.5], [0.0,-1.0], [2.0,0.25] ]
+    },
+    S2: {
+      Wx: [ [0.3,-0.2,0.4], [0.0,0.6,-0.5], [0.25,0.15,-0.3], [-0.2,0.1,0.35] ],
+      Wh: [ [0.4,-0.3,0.0,0.2], [-0.2,0.1,0.5,-0.1], [0.3,0.2,-0.4,0.1], [0.0,-0.25,0.35,0.2] ],
+      b:  [0.0,0.1,-0.05,0.2],
+      x_seq: [ [1.0,0.0,-1.0], [0.5,2.0,0.0], [-1.5,1.0,0.75], [0.25,-0.5,0.5] ]
+    },
+    S3: {
+      Wx: [ [0.6,-0.4,0.2], [-0.3,0.5,0.1] ],
+      Wh: [ [0.2,-0.1], [-0.25,0.35] ],
+      b:  [0.05,-0.15],
+      x_seq: [ [-0.5,1.0,0.25], [1.5,-1.0,0.0] ]
+    }
+  };
+  function computeSequence(data){
+    const hiddenSize = data.b.length;
+    const T = data.x_seq.length;
+    let hPrev = new Array(hiddenSize).fill(0);
+    const hs = []; // store h_t for t=1..T
+    for(let t=0;t<T;t++){
+      const x_t = data.x_seq[t]; // array length inputSize
+      const z = new Array(hiddenSize).fill(0);
+      for(let i=0;i<hiddenSize;i++){
+        // Wx x_t
+        for(let j=0;j<x_t.length;j++){ z[i] += data.Wx[i][j] * x_t[j]; }
+        // Wh hPrev
+        for(let k=0;k<hiddenSize;k++){ z[i] += data.Wh[i][k] * hPrev[k]; }
+        z[i] += data.b[i];
+      }
+      const h_t = z.map(v=>Math.tanh(v));
+      hs.push({ z, h: h_t });
+      hPrev = h_t;
+    }
+    return { hs, h_T: hPrev };
+  }
+  function initSequenceReveal(){
+    document.querySelectorAll('.sequence-problem').forEach(prob => {
+      const id = prob.getAttribute('data-seq-problem');
+      const btn = prob.querySelector('.practice-show-seq-btn');
+      const sol = prob.querySelector('.practice-solution');
+      if(!id || !btn || !sol || !sequencePracticeData[id]) return;
+      btn.addEventListener('click', ()=>{
+        if(sol.hasAttribute('hidden')){
+          const { hs, h_T } = computeSequence(sequencePracticeData[id]);
+          let out = '';
+          hs.forEach((step, idx)=>{
+            const zStr = step.z.map(v=>v.toFixed(6)).join(', ');
+            const hStr = step.h.map(v=>v.toFixed(6)).join(', ');
+            out += `t=${idx+1}\n  z: [${zStr}]\n  h: [${hStr}]\n`;
+          });
+            const hTStr = h_T.map(v=>v.toFixed(6)).join(', ');
+          out += `\nFinal h_T: [${hTStr}]`;
+          sol.textContent = out;
+          sol.removeAttribute('hidden');
+          btn.textContent = 'Hide Answer';
+        } else {
+          sol.setAttribute('hidden','');
+          btn.textContent = 'Show Answer';
+        }
+      });
+    });
+  }
+  initSequenceReveal();
+  // Forget gate practice data & logic
+  const forgetGatePracticeData = {
+    FG1: {
+      x: [1.0,-0.5],
+      h: [0.2,-0.1,0.3],
+      C: [0.5,-0.25,1.0],
+      Wx: [ [0.4,-0.3], [0.1,0.5], [-0.2,0.6] ],
+      Wh: [ [0.3,-0.1,0.2], [-0.4,0.25,0.1], [0.5,-0.3,0.4] ],
+      Wf: [ [0.2,0.1,-0.3], [-0.5,0.4,0.25], [0.3,-0.2,0.6] ],
+      b_f: [0.05,-0.02,0.10]
+    },
+    FG2: {
+      x: [0.5,-1.0,2.0],
+      h: [0.1,0.0,-0.2,0.3],
+      C: [1.0,-0.5,0.25,0.75],
+      Wx: [ [0.3,-0.2,0.4], [0.0,0.6,-0.5], [0.25,0.15,-0.3], [-0.2,0.1,0.35] ],
+      Wh: [ [0.4,-0.3,0.0,0.2], [-0.2,0.1,0.5,-0.1], [0.3,0.2,-0.4,0.1], [0.0,-0.25,0.35,0.2] ],
+      Wf: [ [0.2,-0.1,0.3,-0.4], [0.5,0.0,-0.25,0.2], [-0.3,0.4,0.1,0.35], [0.25,-0.5,0.2,0.1] ],
+      b_f: [0.00,0.10,-0.05,0.20]
+    },
+    FG3: {
+      x: [-1.0,0.25,0.5],
+      h: [0.6,-0.4],
+      C: [0.2,1.25],
+      Wx: [ [0.6,-0.4,0.2], [-0.3,0.5,0.1] ],
+      Wh: [ [0.2,-0.1], [-0.25,0.35] ],
+      Wf: [ [0.4,-0.2], [-0.3,0.5] ],
+      b_f: [0.02,-0.03]
+    }
+  };
+  function sigmoid(x){ return 1/(1+Math.exp(-x)); }
+  function computeForgetGate(data){
+    const hiddenSize = data.h.length;
+    // v = Wx x + Wh h
+    const v = new Array(hiddenSize).fill(0);
+    for(let i=0;i<hiddenSize;i++){
+      for(let j=0;j<data.x.length;j++){ v[i] += data.Wx[i][j] * data.x[j]; }
+      for(let k=0;k<hiddenSize;k++){ v[i] += data.Wh[i][k] * data.h[k]; }
+    }
+    // z_f = Wf v + b_f
+    const z_f = new Array(hiddenSize).fill(0);
+    for(let i=0;i<hiddenSize;i++){
+      for(let k=0;k<hiddenSize;k++){ z_f[i] += data.Wf[i][k] * v[k]; }
+      if(data.b_f){ z_f[i] += data.b_f[i]; }
+    }
+    const f = z_f.map(sigmoid);
+    const C_out = f.map((fv,i)=> fv * data.C[i]);
+    return { v, z_f, f, C_out };
+  }
+  function initForgetGateReveal(){
+    document.querySelectorAll('.forget-gate-problem').forEach(prob => {
+      const id = prob.getAttribute('data-fg-problem');
+      const btn = prob.querySelector('.practice-show-fg-btn');
+      const sol = prob.querySelector('.practice-solution');
+      if(!id || !btn || !sol || !forgetGatePracticeData[id]) return;
+      btn.addEventListener('click', ()=>{
+        if(sol.hasAttribute('hidden')){
+          const { v, z_f, f, C_out } = computeForgetGate(forgetGatePracticeData[id]);
+          const vStr = v.map(v=>v.toFixed(6)).join(', ');
+          const zStr = z_f.map(v=>v.toFixed(6)).join(', ');
+          const fStr = f.map(v=>v.toFixed(6)).join(', ');
+          const cOutStr = C_out.map(v=>v.toFixed(6)).join(', ');
+          const bStr = forgetGatePracticeData[id].b_f ? forgetGatePracticeData[id].b_f.map(v=>v.toFixed(6)).join(', ') : '';
+          const biasLine = bStr ? `b_f: [${bStr}]\n` : '';
+          sol.textContent = `v: [${vStr}]\n${biasLine}z_f: [${zStr}]\nf: [${fStr}]\nC_out: [${cOutStr}]`;
+          sol.removeAttribute('hidden');
+          btn.textContent = 'Hide Answer';
+        } else {
+          sol.setAttribute('hidden','');
+          btn.textContent = 'Show Answer';
+        }
+      });
+    });
+  }
+  initForgetGateReveal();
 })();

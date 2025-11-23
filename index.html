@@ -144,6 +144,336 @@
       <div id="lstm-composite-container" class="network-box" aria-label="Full LSTM cell composite diagram"></div>
     </section>
   </section>
+  <hr class="section-divider" />
+  <section class="content-section" id="practice-section">
+    <h2>Practice: Base RNN Cell</h2>
+    <p class="practice-intro">Compute <code>h_next</code>.</p>
+    <div class="practice-problems">
+      <div class="practice-problem" data-problem="1">
+        <h3>Problem 1 (hidden=4, input=3)</h3>
+        <button type="button" class="practice-copy-btn">Copy Arrays</button>
+        <pre><code># Problem 1
+      import numpy as np
+       x = np.array([[1.0],[0.5],[-1.0]])
+       h_prev = np.array([[0.2],[-0.1],[0.05],[0.3]])
+Wx = np.array([
+ [0.3,  -0.2,  0.1],
+ [0.0,   0.5, -0.4],
+ [0.25,  0.15,-0.3],
+ [-0.1,  0.2,  0.4],
+])
+Wh = np.array([
+ [0.4,  -0.3,  0.0,  0.2],
+ [-0.2,  0.1,  0.5, -0.1],
+ [0.3,   0.2, -0.4,  0.1],
+ [0.0,  -0.25, 0.35, 0.2],
+])
+</code></pre>
+        <div class="practice-answer">
+          <button type="button" class="practice-show-btn">Show Answer</button>
+          <div class="practice-solution" hidden></div>
+        </div>
+      </div>
+      <div class="practice-problem" data-problem="2">
+        <h3>Problem 2 (hidden=3, input=2)</h3>
+        <button type="button" class="practice-copy-btn">Copy Arrays</button>
+        <pre><code># Problem 2
+      import numpy as np
+       x = np.array([[1.0],[-2.0]])
+       h_prev = np.array([[0.4],[0.0],[-0.3]])
+Wx = np.array([
+ [0.6, -0.5],
+ [0.2,  0.1],
+ [-0.3, 0.4],
+])
+Wh = np.array([
+ [0.2, -0.1, 0.0],
+ [-0.4, 0.3, 0.5],
+ [0.1, -0.2, 0.25],
+])
+</code></pre>
+        <div class="practice-answer">
+          <button type="button" class="practice-show-btn">Show Answer</button>
+          <div class="practice-solution" hidden></div>
+        </div>
+      </div>
+      <div class="practice-problem" data-problem="3">
+        <h3>Problem 3 (hidden=5, input=4)</h3>
+        <button type="button" class="practice-copy-btn">Copy Arrays</button>
+        <pre><code># Problem 3
+      import numpy as np
+       x = np.array([[0.5],[-1.0],[1.5],[0.0]])
+       h_prev = np.array([[0.1],[0.2],[-0.2],[0.0],[0.3]])
+Wx = np.array([
+ [0.1, -0.2,  0.3,  0.0],
+ [0.4,  0.0, -0.1,  0.2],
+ [-0.3, 0.25, 0.15, -0.05],
+ [0.0,  0.3, -0.2,  0.4],
+ [0.2, -0.1,  0.0,  0.1],
+])
+Wh = np.array([
+ [0.2, -0.1,  0.05, 0.0,  0.1],
+ [0.0,  0.3, -0.2,  0.1, -0.05],
+ [0.25, 0.1, -0.4,  0.0,  0.2],
+ [-0.1, 0.2,  0.3, -0.15, 0.05],
+ [0.05,-0.2,  0.1,  0.25,-0.3 ],
+])
+</code></pre>
+        <div class="practice-answer">
+          <button type="button" class="practice-show-btn">Show Answer</button>
+          <div class="practice-solution" hidden></div>
+        </div>
+      </div>
+      <div class="practice-problem" data-problem="4">
+        <h3>Problem 4 (hidden=3, input=3)</h3>
+        <button type="button" class="practice-copy-btn">Copy Arrays</button>
+        <pre><code># Problem 4
+      import numpy as np
+       x = np.array([[2.0],[-1.0],[0.5]])
+       h_prev = np.array([[1.0],[-0.5],[0.0]])
+Wx = np.array([
+ [1.0, -2.0,  1.0],
+ [0.0,  1.0, -1.0],
+ [-1.0, 2.0,  0.0],
+])
+Wh = np.array([
+ [2.0, -1.0, 0.0],
+ [-1.0, 1.0,  1.0],
+ [0.0, -2.0, 2.0],
+])
+</code></pre>
+        <div class="practice-answer">
+          <button type="button" class="practice-show-btn">Show Answer</button>
+          <div class="practice-solution" hidden></div>
+        </div>
+      </div>
+      <div class="practice-problem" data-problem="5">
+        <h3>Problem 5 (hidden=4, input=2)</h3>
+        <button type="button" class="practice-copy-btn">Copy Arrays</button>
+        <pre><code># Problem 5
+      import numpy as np
+       x = np.array([[3.0],[-2.0]])
+       h_prev = np.array([[0.5],[1.0],[-0.5],[0.0]])
+Wx = np.array([
+ [1.2, -0.8],
+ [0.5,  1.1],
+ [-1.0, 0.9],
+ [0.7, -0.6],
+])
+Wh = np.array([
+ [0.9, -0.5,  0.3,  0.2],
+ [0.4,  0.8, -0.6,  0.0],
+ [-0.7, 0.2,  1.0, -0.4],
+ [0.3, -0.9,  0.5,  0.6],
+])
+</code></pre>
+        <div class="practice-answer">
+          <button type="button" class="practice-show-btn">Show Answer</button>
+          <div class="practice-solution" hidden></div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <hr class="section-divider" />
+  <section class="content-section" id="sequence-practice-section">
+    <h2>Practice: RNN Cell Sequence</h2>
+    <p class="practice-intro">Unroll the RNN for the given number of cells (timesteps). Initial <code>h_0</code> is all zeros. Compute the final hidden state <code>h_T</code>. (We also show intermediate states.)</p>
+    <div class="practice-problems sequence">
+      <div class="practice-problem sequence-problem" data-seq-problem="S1">
+        <h3>Sequence Problem S1 (T=3, hidden=3, input=2)</h3>
+        <button type="button" class="practice-copy-btn">Copy Arrays</button>
+        <pre><code># Sequence Problem S1
+import numpy as np
+T = 3  # timesteps
+x_seq = [
+    np.array([[1.0],[0.5]]),
+    np.array([[0.0],[ -1.0]]),
+    np.array([[2.0],[ 0.25]]),
+]
+Wx = np.array([
+ [0.4, -0.3],
+ [0.1,  0.5],
+ [-0.2, 0.6],
+])
+Wh = np.array([
+ [0.3, -0.1, 0.2],
+ [-0.4, 0.25, 0.1],
+ [0.5, -0.3, 0.4],
+])
+b = np.array([[0.05],[0.0],[ -0.1]])
+h0 = np.zeros((3,1))
+# h_t = tanh(Wx x_t + Wh h_{t-1} + b)
+</code></pre>
+        <div class="practice-answer">
+          <button type="button" class="practice-show-seq-btn">Show Answer</button>
+          <div class="practice-solution" hidden></div>
+        </div>
+      </div>
+      <div class="practice-problem sequence-problem" data-seq-problem="S2">
+        <h3>Sequence Problem S2 (T=4, hidden=4, input=3)</h3>
+        <button type="button" class="practice-copy-btn">Copy Arrays</button>
+        <pre><code># Sequence Problem S2
+import numpy as np
+T = 4
+x_seq = [
+    np.array([[ 1.0],[ 0.0],[-1.0]]),
+    np.array([[ 0.5],[ 2.0],[ 0.0]]),
+    np.array([[ -1.5],[ 1.0],[ 0.75]]),
+    np.array([[ 0.25],[ -0.5],[ 0.5]]),
+]
+Wx = np.array([
+ [ 0.3, -0.2,  0.4],
+ [ 0.0,  0.6, -0.5],
+ [ 0.25, 0.15,-0.3],
+ [ -0.2, 0.1,  0.35],
+])
+Wh = np.array([
+ [ 0.4, -0.3, 0.0,  0.2],
+ [ -0.2, 0.1, 0.5, -0.1],
+ [ 0.3,  0.2,-0.4,  0.1],
+ [ 0.0, -0.25,0.35, 0.2],
+])
+b = np.array([[0.0],[0.1],[-0.05],[0.2]])
+h0 = np.zeros((4,1))
+# h_t = tanh(Wx x_t + Wh h_{t-1} + b)
+</code></pre>
+        <div class="practice-answer">
+          <button type="button" class="practice-show-seq-btn">Show Answer</button>
+          <div class="practice-solution" hidden></div>
+        </div>
+      </div>
+      <div class="practice-problem sequence-problem" data-seq-problem="S3">
+        <h3>Sequence Problem S3 (T=2, hidden=2, input=3)</h3>
+        <button type="button" class="practice-copy-btn">Copy Arrays</button>
+        <pre><code># Sequence Problem S3
+import numpy as np
+T = 2
+x_seq = [
+    np.array([[ -0.5],[ 1.0],[ 0.25]]),
+    np.array([[ 1.5],[ -1.0],[ 0.0]]),
+]
+Wx = np.array([
+ [ 0.6, -0.4,  0.2],
+ [ -0.3, 0.5,  0.1],
+])
+Wh = np.array([
+ [ 0.2, -0.1],
+ [ -0.25, 0.35],
+])
+b = np.array([[0.05],[ -0.15]])
+h0 = np.zeros((2,1))
+# h_t = tanh(Wx x_t + Wh h_{t-1} + b)
+</code></pre>
+        <div class="practice-answer">
+          <button type="button" class="practice-show-seq-btn">Show Answer</button>
+          <div class="practice-solution" hidden></div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <hr class="section-divider" />
+  <section class="content-section" id="forget-gate-practice-section">
+    <h2>Practice: Forget Gate Only</h2>
+    <p class="practice-intro">Given <code>x, h, C, Wx, Wh, Wf, b_f</code>, compute the forget gate activation and its combination with the cell state. We define:<br><code>v = Wx x + Wh h</code><br><code>z_f = Wf v + b_f</code><br><code>f = sigmoid(z_f)</code><br><code>C_out = f ⊙ C</code> (elementwise multiply). Show the final <code>C_out</code> (and intermediate vectors).</p>
+    <div class="practice-problems forget-gate">
+      <div class="practice-problem forget-gate-problem" data-fg-problem="FG1">
+        <h3>Forget Gate Problem FG1 (hidden=3, input=2)</h3>
+        <button type="button" class="practice-copy-btn">Copy Arrays</button>
+        <pre><code># Forget Gate Problem FG1
+import numpy as np
+x = np.array([[1.0],[ -0.5]])
+h = np.array([[0.2],[ -0.1],[0.3]])
+C = np.array([[0.5],[ -0.25],[1.0]])
+Wx = np.array([
+ [0.4, -0.3],
+ [0.1,  0.5],
+ [-0.2, 0.6],
+])
+Wh = np.array([
+ [0.3, -0.1, 0.2],
+ [-0.4, 0.25, 0.1],
+ [0.5, -0.3, 0.4],
+])
+Wf = np.array([
+ [0.2, 0.1, -0.3],
+ [-0.5, 0.4, 0.25],
+ [0.3,-0.2, 0.6],
+])
+# bias for forget gate
+b_f = np.array([[0.05],[ -0.02],[0.10]])
+# v = Wx x + Wh h; z_f = Wf v + b_f; f = sigmoid(z_f); C_out = f * C
+</code></pre>
+        <div class="practice-answer">
+          <button type="button" class="practice-show-fg-btn">Show Answer</button>
+          <div class="practice-solution" hidden></div>
+        </div>
+      </div>
+      <div class="practice-problem forget-gate-problem" data-fg-problem="FG2">
+        <h3>Forget Gate Problem FG2 (hidden=4, input=3)</h3>
+        <button type="button" class="practice-copy-btn">Copy Arrays</button>
+        <pre><code># Forget Gate Problem FG2
+import numpy as np
+x = np.array([[0.5],[ -1.0],[2.0]])
+h = np.array([[0.1],[0.0],[ -0.2],[0.3]])
+C = np.array([[1.0],[ -0.5],[0.25],[0.75]])
+Wx = np.array([
+ [0.3, -0.2,  0.4],
+ [0.0,  0.6, -0.5],
+ [0.25, 0.15,-0.3],
+ [-0.2, 0.1,  0.35],
+])
+Wh = np.array([
+ [0.4, -0.3, 0.0,  0.2],
+ [-0.2, 0.1, 0.5, -0.1],
+ [0.3,  0.2,-0.4,  0.1],
+ [0.0,-0.25,0.35, 0.2],
+])
+Wf = np.array([
+ [0.2, -0.1, 0.3, -0.4],
+ [0.5,  0.0,-0.25, 0.2],
+ [-0.3, 0.4, 0.1,  0.35],
+ [0.25,-0.5, 0.2,  0.1],
+])
+# bias for forget gate
+b_f = np.array([[0.00],[0.10],[ -0.05],[0.20]])
+# v = Wx x + Wh h; z_f = Wf v + b_f; f = sigmoid(z_f); C_out = f * C
+</code></pre>
+        <div class="practice-answer">
+          <button type="button" class="practice-show-fg-btn">Show Answer</button>
+          <div class="practice-solution" hidden></div>
+        </div>
+      </div>
+      <div class="practice-problem forget-gate-problem" data-fg-problem="FG3">
+        <h3>Forget Gate Problem FG3 (hidden=2, input=3)</h3>
+        <button type="button" class="practice-copy-btn">Copy Arrays</button>
+        <pre><code># Forget Gate Problem FG3
+import numpy as np
+x = np.array([[ -1.0],[0.25],[ 0.5]])
+h = np.array([[0.6],[ -0.4]])
+C = np.array([[0.2],[1.25]])
+Wx = np.array([
+ [0.6, -0.4,  0.2],
+ [-0.3, 0.5,  0.1],
+])
+Wh = np.array([
+ [0.2, -0.1],
+ [-0.25, 0.35],
+])
+Wf = np.array([
+ [0.4, -0.2],
+ [-0.3, 0.5],
+])
+# bias for forget gate
+b_f = np.array([[0.02],[ -0.03]])
+# v = Wx x + Wh h; z_f = Wf v + b_f; f = sigmoid(z_f); C_out = f * C
+</code></pre>
+        <div class="practice-answer">
+          <button type="button" class="practice-show-fg-btn">Show Answer</button>
+          <div class="practice-solution" hidden></div>
+        </div>
+      </div>
+    </div>
+  </section>
   <script src="script.js"></script>
 </body>
 </html>
