@@ -414,6 +414,8 @@ b_f = np.array([[0.02],[-0.03]])
     </div>
   </section>
 
+  
+
   <section class="content-section" id="input-gate-practice-section">
     <h2>Practice: Input Gate Only</h2>
     <p class="practice-intro">Given <code>x, h, Wx, Wh, Wi, WC, b_i, b_C</code>, compute the input gate activation and the candidate cell contribution. We define:<br><code>v = Wx x + Wh h</code><br><code>z_i = Wi v + b_i</code><br><code>i = sigmoid(z_i)</code><br><code>z_C = WC v + b_C</code><br><code>C̃ = tanh(z_C)</code><br><code>Contribution = i ⊙ C̃</code> (elementwise multiply). Show intermediate vectors and the contribution.</p>
@@ -530,6 +532,107 @@ C = np.array([[0.2],[1.25]])
 </code></pre>
         <div class="practice-answer">
           <button type="button" class="practice-show-ig-btn">Show Answer</button>
+          <div class="practice-solution" hidden></div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="content-section" id="output-gate-practice-section">
+    <h2>Practice: Output Gate Only</h2>
+    <p class="practice-intro">Given <code>x, h, Wx, Wh, Wo, b_o, C</code>, compute the output gate activation and resulting hidden output. We define:<br><code>v = Wx x + Wh h</code><br><code>z_o = Wo v + b_o</code><br><code>o = sigmoid(z_o)</code><br><code>h_out = o ⊙ tanh(C)</code></p>
+    <div class="practice-problems output-gate">
+      <div class="practice-problem output-gate-problem" data-og-problem="OG1">
+        <h3>Output Gate Problem OG1 (hidden=3, input=2)</h3>
+        <button type="button" class="practice-copy-btn">Copy Arrays</button>
+        <pre><code># Output Gate Problem OG1
+import numpy as np
+x = np.array([[1.0],[-0.5]])
+h = np.array([[0.2],[-0.1],[0.3]])
+C = np.array([[0.5],[-0.25],[1.0]])
+Wx = np.array([
+ [0.4, -0.3],
+ [0.1,  0.5],
+ [-0.2, 0.6],
+])
+Wh = np.array([
+ [0.3, -0.1, 0.2],
+ [-0.4, 0.25, 0.1],
+ [0.5, -0.3, 0.4],
+])
+Wo = np.array([
+ [0.2, 0.1, -0.1],
+ [-0.15, 0.25, 0.05],
+ [0.05, -0.2, 0.3],
+])
+# bias
+b_o = np.array([[0.01],[-0.02],[0.03]])
+</code></pre>
+        <div class="practice-answer">
+          <button type="button" class="practice-show-og-btn">Show Answer</button>
+          <div class="practice-solution" hidden></div>
+        </div>
+      </div>
+
+      <div class="practice-problem output-gate-problem" data-og-problem="OG2">
+        <h3>Output Gate Problem OG2 (hidden=4, input=3)</h3>
+        <button type="button" class="practice-copy-btn">Copy Arrays</button>
+        <pre><code># Output Gate Problem OG2
+import numpy as np
+x = np.array([[0.5],[-1.0],[2.0]])
+h = np.array([[0.1],[0.0],[-0.2],[0.3]])
+C = np.array([[1.0],[-0.5],[0.25],[0.75]])
+Wx = np.array([
+ [0.3, -0.2, 0.4],
+ [0.0,  0.6,-0.5],
+ [0.25,0.15,-0.3],
+ [-0.2,0.1, 0.35],
+])
+Wh = np.array([
+ [0.4, -0.3, 0.0, 0.2],
+ [-0.2, 0.1, 0.5, -0.1],
+ [0.3,  0.2,-0.4,  0.1],
+ [0.0, -0.25,0.35, 0.2],
+])
+Wo = np.array([
+ [0.1, 0.05, -0.1, 0.2],
+ [0.05, -0.02, 0.15, -0.05],
+ [0.2, -0.1, 0.05, 0.1],
+ [-0.1, 0.2, 0.05, 0.0],
+])
+# bias
+b_o = np.array([[0.00],[0.05],[-0.03],[0.08]])
+</code></pre>
+        <div class="practice-answer">
+          <button type="button" class="practice-show-og-btn">Show Answer</button>
+          <div class="practice-solution" hidden></div>
+        </div>
+      </div>
+
+      <div class="practice-problem output-gate-problem" data-og-problem="OG3">
+        <h3>Output Gate Problem OG3 (hidden=2, input=3)</h3>
+        <button type="button" class="practice-copy-btn">Copy Arrays</button>
+        <pre><code># Output Gate Problem OG3
+import numpy as np
+x = np.array([[-1.0],[0.25],[0.5]])
+h = np.array([[0.6],[-0.4]])
+C = np.array([[0.2],[1.25]])
+Wx = np.array([
+ [0.6, -0.4,  0.2],
+ [-0.3, 0.5,  0.1],
+])
+Wh = np.array([
+ [0.2, -0.1],
+ [-0.25, 0.35],
+])
+Wo = np.array([
+ [0.4, -0.2],
+ [-0.3, 0.5],
+])
+# bias
+b_o = np.array([[0.02],[-0.03]])
+</code></pre>
+        <div class="practice-answer">
+          <button type="button" class="practice-show-og-btn">Show Answer</button>
           <div class="practice-solution" hidden></div>
         </div>
       </div>

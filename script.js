@@ -2617,4 +2617,78 @@
     });
   }
   initInputGateReveal();
+  // Output gate practice data & logic
+  const outputGatePracticeData = {
+    OG1: {
+      x: [1.0, -0.5],
+      h: [0.2, -0.1, 0.3],
+      C: [0.5, -0.25, 1.0],
+      Wx: [ [0.4, -0.3], [0.1, 0.5], [-0.2, 0.6] ],
+      Wh: [ [0.3, -0.1, 0.2], [-0.4, 0.25, 0.1], [0.5, -0.3, 0.4] ],
+      Wo: [ [0.2, 0.1, -0.1], [-0.15, 0.25, 0.05], [0.05, -0.2, 0.3] ],
+      b_o: [0.01, -0.02, 0.03]
+    },
+    OG2: {
+      x: [0.5, -1.0, 2.0],
+      h: [0.1, 0.0, -0.2, 0.3],
+      C: [1.0, -0.5, 0.25, 0.75],
+      Wx: [ [0.3, -0.2, 0.4], [0.0, 0.6, -0.5], [0.25, 0.15, -0.3], [-0.2, 0.1, 0.35] ],
+      Wh: [ [0.4, -0.3, 0.0, 0.2], [-0.2, 0.1, 0.5, -0.1], [0.3, 0.2, -0.4, 0.1], [0.0, -0.25, 0.35, 0.2] ],
+      Wo: [ [0.1, 0.05, -0.1, 0.2], [0.05, -0.02, 0.15, -0.05], [0.2, -0.1, 0.05, 0.1], [-0.1, 0.2, 0.05, 0.0] ],
+      b_o: [0.00, 0.05, -0.03, 0.08]
+    },
+    OG3: {
+      x: [-1.0, 0.25, 0.5],
+      h: [0.6, -0.4],
+      C: [0.2, 1.25],
+      Wx: [ [0.6, -0.4, 0.2], [-0.3, 0.5, 0.1] ],
+      Wh: [ [0.2, -0.1], [-0.25, 0.35] ],
+      Wo: [ [0.4, -0.2], [-0.3, 0.5] ],
+      b_o: [0.02, -0.03]
+    }
+  };
+  function computeOutputGate(data){
+    const hiddenSize = data.h.length;
+    const v = new Array(hiddenSize).fill(0);
+    for(let i=0;i<hiddenSize;i++){
+      for(let j=0;j<data.x.length;j++){ v[i] += data.Wx[i][j] * data.x[j]; }
+      for(let k=0;k<hiddenSize;k++){ v[i] += data.Wh[i][k] * data.h[k]; }
+    }
+    const z_o = new Array(hiddenSize).fill(0);
+    for(let i=0;i<hiddenSize;i++){
+      for(let k=0;k<hiddenSize;k++){ z_o[i] += data.Wo[i][k] * v[k]; }
+      if(data.b_o){ z_o[i] += data.b_o[i]; }
+    }
+    const o_act = z_o.map(sigmoid);
+    const tanhC = data.C ? data.C.map(Math.tanh) : null;
+    const h_out = (tanhC && tanhC.length === o_act.length) ? o_act.map((ov,i)=> ov * tanhC[i]) : null;
+    return { v, z_o, o_act, tanhC, h_out };
+  }
+  function initOutputGateReveal(){
+    document.querySelectorAll('.output-gate-problem').forEach(prob => {
+      const id = prob.getAttribute('data-og-problem');
+      const btn = prob.querySelector('.practice-show-og-btn');
+      const sol = prob.querySelector('.practice-solution');
+      if(!id || !btn || !sol || !outputGatePracticeData[id]) return;
+      btn.addEventListener('click', ()=>{
+        if(sol.hasAttribute('hidden')){
+          const { v, z_o, o_act, tanhC, h_out } = computeOutputGate(outputGatePracticeData[id]);
+          const vStr = v.map(v=>v.toFixed(6)).join(', ');
+          const zoStr = z_o.map(v=>v.toFixed(6)).join(', ');
+          const oStr = o_act.map(v=>v.toFixed(6)).join(', ');
+          const cStr = tanhC ? tanhC.map(v=>v.toFixed(6)).join(', ') : '';
+          const houtStr = h_out ? h_out.map(v=>v.toFixed(6)).join(', ') : '';
+          const boStr = outputGatePracticeData[id].b_o ? outputGatePracticeData[id].b_o.map(v=>v.toFixed(6)).join(', ') : '';
+          const boLine = boStr ? `b_o: [${boStr}]\n` : '';
+          sol.textContent = `v: [${vStr}]\n${boLine}z_o: [${zoStr}]\no: [${oStr}]\n\ntanh(C): [${cStr}]\nh_out = o ⊙ tanh(C): [${houtStr}]`;
+          sol.removeAttribute('hidden');
+          btn.textContent = 'Hide Answer';
+        } else {
+          sol.setAttribute('hidden','');
+          btn.textContent = 'Show Answer';
+        }
+      });
+    });
+  }
+  initOutputGateReveal();
 })();
