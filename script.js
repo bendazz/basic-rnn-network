@@ -2422,7 +2422,7 @@
   function initSequenceReveal(){
     document.querySelectorAll('.sequence-problem').forEach(prob => {
       const id = prob.getAttribute('data-seq-problem');
-      const btn = prob.querySelector('.practice-show-seq-btn');
+      const btn = prob.querySelector('.practice-show-btn');
       const sol = prob.querySelector('.practice-solution');
       if(!id || !btn || !sol || !sequencePracticeData[id]) return;
       btn.addEventListener('click', ()=>{
