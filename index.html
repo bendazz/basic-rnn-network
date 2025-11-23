@@ -638,6 +638,149 @@ b_o = np.array([[0.02],[-0.03]])
       </div>
     </div>
   </section>
+
+  <section class="content-section" id="lstm-practice-section">
+    <h2>Practice: Full LSTM Cell</h2>
+    <p class="practice-intro">Given <code>x, h, C, Wx, Wh, Wf, Wi, Wo, WC, b_f, b_i, b_o, b_C</code>, compute the next cell state and hidden state for a single LSTM cell. We define:<br><code>v = Wx x + Wh h</code><br><code>z_f = Wf v + b_f</code><br><code>f = sigmoid(z_f)</code><br><code>z_i = Wi v + b_i</code><br><code>i = sigmoid(z_i)</code><br><code>z_C = WC v + b_C</code><br><code>C̃ = tanh(z_C)</code><br><code>C_next = f ⊙ C + i ⊙ C̃</code><br><code>z_o = Wo v + b_o</code><br><code>o = sigmoid(z_o)</code><br><code>h_next = o ⊙ tanh(C_next)</code></p>
+    <div class="practice-problems lstm">
+      <div class="practice-problem lstm-problem" data-lstm-problem="L1">
+        <h3>LSTM Problem L1 (hidden=3, input=2)</h3>
+        <button type="button" class="practice-copy-btn">Copy Arrays</button>
+        <pre><code># LSTM Problem L1
+import numpy as np
+x = np.array([[1.0],[-0.5]])
+h = np.array([[0.2],[-0.1],[0.3]])
+C = np.array([[0.5],[-0.25],[1.0]])
+Wx = np.array([
+ [0.4, -0.3],
+ [0.1,  0.5],
+ [-0.2, 0.6],
+])
+Wh = np.array([
+ [0.3, -0.1, 0.2],
+ [-0.4, 0.25, 0.1],
+ [0.5, -0.3, 0.4],
+])
+Wf = np.array([
+ [0.2, 0.1, -0.1],
+ [-0.05, 0.2, 0.1],
+ [0.1, -0.2, 0.3],
+])
+Wi = np.array([
+ [0.15, -0.05, 0.2],
+ [-0.1, 0.3, 0.05],
+ [0.25, -0.2, 0.1],
+])
+WC = np.array([
+ [0.2, 0.1, -0.1],
+ [-0.15, 0.25, 0.05],
+ [0.05, -0.2, 0.3],
+])
+Wo = np.array([
+ [0.05, -0.02, 0.03],
+ [0.01, 0.04, -0.02],
+ [0.02, -0.03, 0.05],
+])
+b_f = np.array([[0.01],[-0.02],[0.03]])
+b_i = np.array([[0.0],[0.02],[-0.01]])
+b_C = np.array([[0.0],[0.01],[-0.02]])
+b_o = np.array([[0.0],[ -0.01],[0.02]])
+</code></pre>
+        <div class="practice-answer">
+          <button type="button" class="practice-show-lstm-btn">Show Answer</button>
+          <div class="practice-solution" hidden></div>
+        </div>
+      </div>
+
+      <div class="practice-problem lstm-problem" data-lstm-problem="L2">
+        <h3>LSTM Problem L2 (hidden=4, input=3)</h3>
+        <button type="button" class="practice-copy-btn">Copy Arrays</button>
+        <pre><code># LSTM Problem L2
+import numpy as np
+x = np.array([[0.5],[-1.0],[2.0]])
+h = np.array([[0.1],[0.0],[-0.2],[0.3]])
+C = np.array([[1.0],[-0.5],[0.25],[0.75]])
+Wx = np.array([
+ [0.3, -0.2, 0.4],
+ [0.0,  0.6,-0.5],
+ [0.25,0.15,-0.3],
+ [-0.2,0.1, 0.35],
+])
+Wh = np.array([
+ [0.4, -0.3, 0.0, 0.2],
+ [-0.2, 0.1, 0.5, -0.1],
+ [0.3,  0.2,-0.4,  0.1],
+ [0.0, -0.25,0.35, 0.2],
+])
+Wf = np.array([
+ [0.2, -0.1, 0.3, -0.4],
+ [0.5,  0.0,-0.25, 0.2],
+ [-0.3, 0.4, 0.1,  0.35],
+ [0.25,-0.5, 0.2,  0.1],
+])
+Wi = Wf
+WC = Wo = Wx
+Wo = np.array([
+ [0.1, 0.05, -0.1, 0.2],
+ [0.05, -0.02, 0.15, -0.05],
+ [0.2, -0.1, 0.05, 0.1],
+ [-0.1, 0.2, 0.05, 0.0],
+])
+b_f = np.array([[0.00],[0.05],[-0.03],[0.08]])
+b_i = np.array([[0.01],[-0.02],[0.03],[0.00]])
+b_C = np.array([[0.02],[-0.01],[0.04],[0.0]])
+b_o = np.array([[0.0],[0.02],[-0.01],[0.03]])
+</code></pre>
+        <div class="practice-answer">
+          <button type="button" class="practice-show-lstm-btn">Show Answer</button>
+          <div class="practice-solution" hidden></div>
+        </div>
+      </div>
+
+      <div class="practice-problem lstm-problem" data-lstm-problem="L3">
+        <h3>LSTM Problem L3 (hidden=2, input=3)</h3>
+        <button type="button" class="practice-copy-btn">Copy Arrays</button>
+        <pre><code># LSTM Problem L3
+import numpy as np
+x = np.array([[-1.0],[0.25],[0.5]])
+h = np.array([[0.6],[-0.4]])
+C = np.array([[0.2],[1.25]])
+Wx = np.array([
+ [0.6, -0.4,  0.2],
+ [-0.3, 0.5,  0.1],
+])
+Wh = np.array([
+ [0.2, -0.1],
+ [-0.25, 0.35],
+])
+Wf = np.array([
+ [0.4, -0.2],
+ [-0.3, 0.5],
+])
+Wi = np.array([
+ [0.4, -0.2],
+ [-0.3, 0.5],
+])
+WC = np.array([
+ [0.3, -0.15],
+ [-0.2, 0.25],
+])
+Wo = np.array([
+ [0.4, -0.2],
+ [-0.3, 0.5],
+])
+b_f = np.array([[0.02],[-0.03]])
+b_i = np.array([[0.01],[-0.02]])
+b_C = np.array([[0.0],[0.03]])
+b_o = np.array([[0.02],[-0.03]])
+</code></pre>
+        <div class="practice-answer">
+          <button type="button" class="practice-show-lstm-btn">Show Answer</button>
+          <div class="practice-solution" hidden></div>
+        </div>
+      </div>
+    </div>
+  </section>
   <script src="script.js"></script>
 </body>
 </html>

@@ -2647,6 +2647,130 @@
       b_o: [0.02, -0.03]
     }
   };
+  // LSTM practice data & logic
+  const lstmPracticeData = {
+    L1: {
+      x: [1.0, -0.5],
+      h: [0.2, -0.1, 0.3],
+      C: [0.5, -0.25, 1.0],
+      Wx: [ [0.4, -0.3], [0.1, 0.5], [-0.2, 0.6] ],
+      Wh: [ [0.3, -0.1, 0.2], [-0.4, 0.25, 0.1], [0.5, -0.3, 0.4] ],
+      Wf: [ [0.2, 0.1, -0.1], [-0.05, 0.2, 0.1], [0.1, -0.2, 0.3] ],
+      Wi: [ [0.15, -0.05, 0.2], [-0.1, 0.3, 0.05], [0.25, -0.2, 0.1] ],
+      WC: [ [0.2, 0.1, -0.1], [-0.15, 0.25, 0.05], [0.05, -0.2, 0.3] ],
+      Wo: [ [0.05, -0.02, 0.03], [0.01, 0.04, -0.02], [0.02, -0.03, 0.05] ],
+      b_f: [0.01, -0.02, 0.03],
+      b_i: [0.0, 0.02, -0.01],
+      b_C: [0.0, 0.01, -0.02],
+      b_o: [0.0, -0.01, 0.02]
+    },
+    L2: {
+      x: [0.5, -1.0, 2.0],
+      h: [0.1, 0.0, -0.2, 0.3],
+      C: [1.0, -0.5, 0.25, 0.75],
+      Wx: [ [0.3, -0.2, 0.4], [0.0, 0.6, -0.5], [0.25, 0.15, -0.3], [-0.2, 0.1, 0.35] ],
+      Wh: [ [0.4, -0.3, 0.0, 0.2], [-0.2, 0.1, 0.5, -0.1], [0.3, 0.2, -0.4, 0.1], [0.0, -0.25, 0.35, 0.2] ],
+      Wf: [ [0.2, -0.1, 0.3, -0.4], [0.5, 0.0, -0.25, 0.2], [-0.3, 0.4, 0.1, 0.35], [0.25, -0.5, 0.2, 0.1] ],
+      Wi: [ [0.2, -0.1, 0.3, -0.2], [0.1, 0.0, -0.25, 0.2], [-0.3, 0.4, 0.1, 0.35], [0.25, -0.15, 0.2, 0.1] ],
+      WC: [ [0.1, 0.05, -0.1, 0.2], [0.05, -0.02, 0.15, -0.05], [0.2, -0.1, 0.05, 0.1], [-0.1, 0.2, 0.05, 0.0] ],
+      Wo: [ [0.1, 0.05, -0.1, 0.2], [0.05, -0.02, 0.15, -0.05], [0.2, -0.1, 0.05, 0.1], [-0.1, 0.2, 0.05, 0.0] ],
+      b_f: [0.00, 0.05, -0.03, 0.08],
+      b_i: [0.01, -0.02, 0.03, 0.00],
+      b_C: [0.02, -0.01, 0.04, 0.0],
+      b_o: [0.0, 0.02, -0.01, 0.03]
+    },
+    L3: {
+      x: [-1.0, 0.25, 0.5],
+      h: [0.6, -0.4],
+      C: [0.2, 1.25],
+      Wx: [ [0.6, -0.4, 0.2], [-0.3, 0.5, 0.1] ],
+      Wh: [ [0.2, -0.1], [-0.25, 0.35] ],
+      Wf: [ [0.4, -0.2], [-0.3, 0.5] ],
+      Wi: [ [0.4, -0.2], [-0.3, 0.5] ],
+      WC: [ [0.3, -0.15], [-0.2, 0.25] ],
+      Wo: [ [0.4, -0.2], [-0.3, 0.5] ],
+      b_f: [0.02, -0.03],
+      b_i: [0.01, -0.02],
+      b_C: [0.0, 0.03],
+      b_o: [0.02, -0.03]
+    }
+  };
+  function computeLstmCell(data){
+    const hiddenSize = data.h.length;
+    // v = Wx x + Wh h
+    const v = new Array(hiddenSize).fill(0);
+    for(let i=0;i<hiddenSize;i++){
+      for(let j=0;j<data.x.length;j++){ v[i] += data.Wx[i][j] * data.x[j]; }
+      for(let k=0;k<hiddenSize;k++){ v[i] += data.Wh[i][k] * data.h[k]; }
+    }
+    // forget
+    const z_f = new Array(hiddenSize).fill(0);
+    for(let i=0;i<hiddenSize;i++){
+      for(let k=0;k<hiddenSize;k++){ z_f[i] += data.Wf[i][k] * v[k]; }
+      if(data.b_f){ z_f[i] += data.b_f[i]; }
+    }
+    const f = z_f.map(sigmoid);
+    // input
+    const z_i = new Array(hiddenSize).fill(0);
+    for(let i=0;i<hiddenSize;i++){
+      for(let k=0;k<hiddenSize;k++){ z_i[i] += data.Wi[i][k] * v[k]; }
+      if(data.b_i){ z_i[i] += data.b_i[i]; }
+    }
+    const i_gate = z_i.map(sigmoid);
+    // candidate
+    const z_c = new Array(hiddenSize).fill(0);
+    for(let i=0;i<hiddenSize;i++){
+      for(let k=0;k<hiddenSize;k++){ z_c[i] += data.WC[i][k] * v[k]; }
+      if(data.b_C){ z_c[i] += data.b_C[i]; }
+    }
+    const c_tilde = z_c.map(Math.tanh);
+    // next cell
+    const C_next = new Array(hiddenSize).fill(0);
+    for(let i=0;i<hiddenSize;i++){
+      C_next[i] = f[i] * data.C[i] + i_gate[i] * c_tilde[i];
+    }
+    // output
+    const z_o = new Array(hiddenSize).fill(0);
+    for(let i=0;i<hiddenSize;i++){
+      for(let k=0;k<hiddenSize;k++){ z_o[i] += data.Wo[i][k] * v[k]; }
+      if(data.b_o){ z_o[i] += data.b_o[i]; }
+    }
+    const o = z_o.map(sigmoid);
+    const h_next = C_next.map((c,i)=> o[i] * Math.tanh(c));
+    return { v, z_f, f, z_i, i_gate, z_c, c_tilde, C_next, z_o, o, h_next };
+  }
+  function initLstmReveal(){
+    document.querySelectorAll('.lstm-problem').forEach(prob => {
+      const id = prob.getAttribute('data-lstm-problem');
+      const btn = prob.querySelector('.practice-show-lstm-btn');
+      const sol = prob.querySelector('.practice-solution');
+      if(!id || !btn || !sol || !lstmPracticeData[id]) return;
+      btn.addEventListener('click', ()=>{
+        if(sol.hasAttribute('hidden')){
+          const { v, z_f, f, z_i, i_gate, z_c, c_tilde, C_next, z_o, o, h_next } = computeLstmCell(lstmPracticeData[id]);
+          const vStr = v.map(v=>v.toFixed(6)).join(', ');
+          const zfStr = z_f.map(v=>v.toFixed(6)).join(', ');
+          const fStr = f.map(v=>v.toFixed(6)).join(', ');
+          const ziStr = z_i.map(v=>v.toFixed(6)).join(', ');
+          const iStr = i_gate.map(v=>v.toFixed(6)).join(', ');
+          const zcStr = z_c.map(v=>v.toFixed(6)).join(', ');
+          const ctStr = c_tilde.map(v=>v.toFixed(6)).join(', ');
+          const cNextStr = C_next.map(v=>v.toFixed(6)).join(', ');
+          const zoStr = z_o.map(v=>v.toFixed(6)).join(', ');
+          const oStr = o.map(v=>v.toFixed(6)).join(', ');
+          const hNextStr = h_next.map(v=>v.toFixed(6)).join(', ');
+          sol.textContent = `v: [${vStr}]\n\nz_f: [${zfStr}]\nf: [${fStr}]\n\nz_i: [${ziStr}]\ni: [${iStr}]\n\nz_C: [${zcStr}]\nC_tilde: [${ctStr}]\n\nC_next: [${cNextStr}]\n\nz_o: [${zoStr}]\no: [${oStr}]\n\nh_next: [${hNextStr}]`;
+          sol.removeAttribute('hidden');
+          btn.textContent = 'Hide Answer';
+        } else {
+          sol.setAttribute('hidden','');
+          btn.textContent = 'Show Answer';
+        }
+      });
+    });
+  }
+  initLstmReveal();
+
   function computeOutputGate(data){
     const hiddenSize = data.h.length;
     const v = new Array(hiddenSize).fill(0);
